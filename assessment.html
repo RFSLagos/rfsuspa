@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFS Assessment Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --accent:       #2D6A2D;
+            --accent-dim:   rgba(45,106,45,0.12);
+            --gold:         #C8960C;
+            --gold-dim:     rgba(200,150,12,0.12);
+            --success-bg:   #EAF5E4;
+            --success-text: #1A5C1A;
+            --error-bg:     #FEF0F0;
+            --error-text:   #C0392B;
+            --text:         #1A2010;
+            --text-2:       #4A5540;
+            --text-3:       #8A9A80;
+            --border:       rgba(0,0,0,0.09);
+            --card:         #FFFFFF;
+            --bg-surface:   #F3F5F0;
+            --r-sm: 8px; --r-lg: 22px;
+            --shadow: 0 8px 48px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #1a2a1a;
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 24px 16px;
+            position: relative; overflow-x: hidden;
+            color: var(--text);
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background-image: url('hotr-bg.jpg');
+            background-size: cover; background-position: center 30%;
+            filter: blur(3px) brightness(0.32) saturate(0.6);
+            transform: scale(1.05); z-index: 0;
+        }
+        body::after {
+            content: ''; position: fixed; inset: 0;
+            background: radial-gradient(ellipse at center, transparent 20%, rgba(5,15,5,0.65) 100%);
+            z-index: 0;
+        }
+
+        .card {
+            position: relative; z-index: 1;
+            background: var(--card);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow);
+            width: 100%; max-width: 460px;
+            overflow: hidden;
+            animation: rise 0.4s cubic-bezier(.22,.68,0,1.2) both;
+        }
+        @keyframes rise {
+            from { opacity:0; transform: translateY(20px) scale(0.97); }
+            to   { opacity:1; transform: none; }
+        }
+
+        .card-header { padding: 24px 28px 18px; border-bottom: 1px solid var(--border); }
+        .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .brand-text { display: flex; flex-direction: column; gap: 2px; }
+        .brand-name   { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #26361b; }
+        .brand-school { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #7ac042; }
+        .brand-divider { width: 1px; height: 30px; background: rgba(0,0,0,0.12); flex-shrink: 0; }
+        .exam-title { font-size: 21px; font-weight: 700; color: var(--text); line-height: 1.2; }
+        .exam-meta  { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .meta-tag   { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--bg-surface); color: var(--text-2); }
+        .meta-tag.gold { background: var(--gold-dim); color: var(--gold); }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .card-body { padding: 24px 28px 28px; }
+
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .field label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+        .field .hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+        .field .err-text { font-size: 11px; color: var(--error-text); display: none; }
+        .field .err-text.show { display: block; }
+
+        input[type="text"] {
+            width: 100%; height: 46px; padding: 0 14px;
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--r-sm);
+            font-family: 'DM Mono', monospace;
+            font-size: 16px; font-weight: 500;
+            color: var(--text); letter-spacing: 0.05em;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            -webkit-appearance: none;
+            text-transform: uppercase;
+        }
+        input[type="text"]::placeholder { color: var(--text-3); font-size: 14px; letter-spacing: 0; text-transform: none; }
+        input[type="text"]:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-dim); }
+        input[type="text"].invalid { border-color: var(--error-text); box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+
+        .btn {
+            width: 100%; height: 50px; border: none;
+            border-radius: var(--r-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn:enabled:hover  { opacity: 0.88; }
+        .btn:enabled:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-gold    { background: var(--gold);   color: #fff; }
+
+        .status-msg {
+            margin-top: 14px; padding: 13px 16px;
+            border-radius: var(--r-sm); font-size: 13px; font-weight: 500;
+            text-align: center; display: none; line-height: 1.5;
+        }
+        .status-msg.error   { background: var(--error-bg);   color: var(--error-text);   display: block; }
+        .status-msg.success { background: var(--success-bg); color: var(--success-text); display: block; }
+
+        .welcome-strip {
+            background: var(--accent-dim); border-radius: var(--r-sm);
+            padding: 14px 16px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .welcome-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            font-size: 16px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .welcome-name { font-size: 15px; font-weight: 600; color: var(--text); }
+        .welcome-reg  { font-size: 12px; color: var(--text-3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+        .timer-wrap {
+            background: var(--gold-dim); border: 1.5px solid rgba(200,150,12,0.25);
+            border-radius: var(--r-sm); padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .timer-label { font-size: 12px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; }
+        .timer-value { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--gold); }
+        .timer-value.urgent { color: var(--error-text); }
+
+        .instructions-box { background: var(--bg-surface); border-radius: var(--r-sm); padding: 16px 18px; margin-bottom: 20px; }
+        .instructions-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); margin-bottom: 12px; }
+        .instructions-list  { display: flex; flex-direction: column; gap: 8px; }
+        .inst-row { display: flex; gap: 10px; align-items: flex-start; }
+        .inst-num {
+            width: 20px; height: 20px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            font-size: 10px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-top: 1px;
+        }
+        .inst-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+        .confirm-wrap {
+            display: flex; align-items: flex-start; gap: 10px;
+            margin-bottom: 16px; cursor: pointer;
+        }
+        .confirm-wrap input[type="checkbox"] {
+            width: 18px; height: 18px; margin-top: 1px;
+            accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+        }
+        .confirm-label { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+        .redirect-wrap { text-align: center; padding: 12px 0; }
+        .redirect-spinner {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 3px solid var(--accent-dim); border-top-color: var(--accent);
+            margin: 0 auto 16px; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .redirect-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+        .redirect-sub   { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+        .redirect-link  { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: underline; cursor: pointer; }
+
+        /* ── Fullscreen exam iframe overlay ── */
+        #examOverlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 9999;
+            flex-direction: column;
+            background: #fff;
+        }
+        #examOverlay.active { display: flex; }
+
+        /* Status bar pinned at top */
+        #examBar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1a2a1a; color: #fff;
+            padding: 0 16px;
+            height: 48px; flex-shrink: 0;
+            gap: 8px;
+        }
+        #examBarLeft  { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        #examBarRight { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .bar-logo { font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+                    text-transform: uppercase; color: #7ac042; white-space: nowrap; }
+        .bar-reg  { font-family: monospace; font-size: 11px; color: rgba(255,255,255,0.55);
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bar-timer {
+            font-family: monospace; font-size: 15px; font-weight: 600;
+            color: #C8960C; background: rgba(200,150,12,0.15);
+            padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+        }
+        .bar-timer.urgent { color: #C0392B; background: rgba(192,57,43,0.12); }
+        .bar-online-badge {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+            text-transform: uppercase; color: #185FA5;
+            background: #E6F1FB; padding: 3px 8px; border-radius: 99px;
+        }
+
+        /* Iframe takes remaining height */
+        #examFrame {
+            flex: 1; width: 100%; border: none;
+            /* iOS Safari needs explicit height */
+            min-height: 0;
+        }
+
+        /* Submitted screen — shown over iframe after form submission */
+        #submittedScreen {
+            display: none;
+            position: fixed; inset: 0; z-index: 10000;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #1a2a1a; color: #fff;
+            text-align: center; padding: 32px 24px;
+        }
+        #submittedScreen.active { display: flex; }
+        .sub-icon  { font-size: 64px; margin-bottom: 20px; }
+        .sub-title { font-size: 24px; font-weight: 700; color: #7ac042; margin-bottom: 12px; }
+        .sub-text  { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.7; max-width: 320px; }
+        .sub-reg   { font-family: monospace; font-size: 13px; margin-top: 20px;
+                     background: rgba(255,255,255,0.08); padding: 8px 18px;
+                     border-radius: 8px; display: inline-block; color: #7ac042; }
+        .sub-note  { font-size: 11px; color: rgba(255,255,255,0.3);
+                     margin-top: 28px; line-height: 1.6; max-width: 300px; }
+
+        /* ── Submit button bar pinned above iframe ── */
+        #submitBar {
+            display: none;
+            background: #0f1f0f;
+            border-top: 2px solid #2D6A2D;
+            padding: 12px 16px;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        #submitBar.visible { display: flex; }
+        .submit-bar-text {
+            font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5;
+            flex: 1;
+        }
+        .submit-bar-text strong {
+            color: #7ac042; display: block;
+            font-size: 13px; margin-bottom: 2px;
+        }
+        #submitDoneBtn {
+            background: #2D6A2D; color: #fff;
+            border: 2px solid #7ac042; border-radius: 8px;
+            padding: 12px 20px; font-size: 14px; font-weight: 700;
+            cursor: pointer; white-space: nowrap; flex-shrink: 0;
+            font-family: 'DM Sans', sans-serif;
+            transition: background 0.15s, transform 0.1s;
+            box-shadow: 0 0 12px rgba(45,106,45,0.4);
+        }
+        #submitDoneBtn:active { transform: scale(0.97); }
+        #submitDoneBtn:hover  { background: #245A24; }
+
+        /* ── Time-up screen ── */
+        #timeUpScreen {
+            display: none;
+            position: fixed; inset: 0; z-index: 10001;
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #1a0a0a; color: #fff;
+            text-align: center; padding: 32px 24px;
+        }
+        #timeUpScreen.active { display: flex; }
+        .timeup-icon  { font-size: 64px; margin-bottom: 20px; }
+        .timeup-title { font-size: 24px; font-weight: 700; color: #C0392B; margin-bottom: 12px; }
+        .timeup-text  { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.7; max-width: 320px; }
+        .timeup-reg   { font-family: monospace; font-size: 13px; margin-top: 20px;
+                        background: rgba(255,255,255,0.08); padding: 8px 18px;
+                        border-radius: 8px; display: inline-block; color: #e74c3c; }
+        .timeup-note  { font-size: 11px; color: rgba(255,255,255,0.3);
+                        margin-top: 28px; line-height: 1.6; max-width: 300px; }
+
+        /* Blocked fallback banner */
+        #iframeBlockedBanner {
+            display: none;
+            background: #FEF0F0; color: #C0392B;
+            font-size: 13px; font-weight: 500;
+            padding: 10px 16px; text-align: center;
+            flex-shrink: 0; line-height: 1.5;
+        }
+        #iframeBlockedBanner a { color: #C0392B; font-weight: 700; }
+
+        /* ── Exam closed banner on login screen ── */
+        #examClosedBanner {
+            display: none;
+            background: #FEF3C7; color: #92400E;
+            border-radius: var(--r-sm);
+            padding: 12px 16px; margin-bottom: 14px;
+            font-size: 13px; font-weight: 500;
+            line-height: 1.5; text-align: center;
+        }
+        #examClosedBanner.show { display: block; }
+        #examClosedBanner .closed-title {
+            font-weight: 700; font-size: 14px;
+            display: block; margin-bottom: 4px;
+        }
+        #examClosedBanner .closed-pulse {
+            display: inline-block; width: 8px; height: 8px;
+            background: #92400E; border-radius: 50%;
+            margin-right: 6px; vertical-align: middle;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* ── Location pill ── */
+        .loc-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+        .loc-pill.loading { background: #FEF3C7; color: #92400E; }
+        .loc-pill.ok      { background: var(--success-bg); color: var(--success-text); }
+        .loc-pill.err     { background: var(--error-bg); color: var(--error-text); }
+
+        /* ── Online toggle on login screen ── */
+        .online-toggle-wrap {
+            background: var(--bg-surface); border-radius: var(--r-sm);
+            padding: 12px 14px; margin-bottom: 14px;
+        }
+        .online-check-row {
+            display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;
+        }
+        .online-check-row input[type="checkbox"] {
+            width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+        }
+        .online-check-label { font-size: 13px; font-weight: 600; color: var(--text-2); }
+        .online-code-field {
+            display: none; margin-top: 12px; padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .online-code-field.show { display: block; }
+
+        /* ── Online session code field (instructions screen) ── */
+        .online-session-wrap { display: none; margin-bottom: 16px; }
+        .online-session-wrap.show { display: block; }
+        .online-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #E6F1FB; color: #185FA5;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+            text-transform: uppercase; padding: 3px 10px;
+            border-radius: 99px; margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+
+    <!-- Header -->
+    <div class="card-header">
+        <div class="brand">
+            <svg viewBox="0 0 1535.61 720.7" width="56" height="26" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
+                <path fill="#26361b" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
+                <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
+            </svg>
+            <div class="brand-divider"></div>
+            <div class="brand-text">
+                <span class="brand-name">House on the Rock Lagos</span>
+                <span class="brand-school">Rock Foundation School</span>
+            </div>
+        </div>
+        <div class="exam-title" id="assessmentTitle">Loading assessment…</div>
+        <div class="exam-meta" id="assessmentMeta">
+            <span class="meta-tag" id="assessmentTypeBadge" style="display:none;"></span>
+            <span class="meta-tag gold" id="assessmentTimeBadge" style="display:none;">45 Minutes</span>
+        </div>
+    </div>
+
+    <!-- Screen 1: Login -->
+    <div class="screen active" id="screenLogin">
+        <div class="card-body">
+            <!-- Exam closed banner — shown when ExamOpen = FALSE -->
+            <div id="examClosedBanner">
+                <span class="closed-title">
+                    <span class="closed-pulse"></span>Assessment Not Yet Open
+                </span>
+                The assessment window is not currently open. Please wait — this page will update automatically when your Admin opens it.
+            </div>
+
+            <div class="field">
+                <label>Registration Number</label>
+                <input type="text" id="regInput" placeholder="RFS / XXXX / XXX" maxlength="14" autocomplete="off" inputmode="text">
+                <span class="hint">Format: RFS/2601/053</span>
+                <span class="err-text" id="regErr"></span>
+            </div>
+            <div class="field">
+                <label>Access Code</label>
+                <input type="text" id="codeInput" placeholder="Enter your unique code" maxlength="10" autocomplete="off">
+                <span class="hint">Your personal assessment code provided by admin</span>
+                <span class="err-text" id="codeErr"></span>
+            </div>
+            <!-- Location status — only shown for physical students -->
+            <div id="locRow" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
+                <span style="font-size:12px; color:var(--text-3); font-weight:500;">Your location</span>
+                <span class="loc-pill loading" id="locPill">Locating…</span>
+            </div>
+
+            <!-- Online attendance toggle -->
+            <div class="online-toggle-wrap">
+                <label class="online-check-row">
+                    <input type="checkbox" id="onlineToggle" onchange="handleOnlineToggle()">
+                    <span class="online-check-label">I am taking the exam outside Lagos</span>
+                </label>
+                <div class="online-code-field" id="onlineCodeField">
+                    <label class="field" style="margin-bottom:0;">
+                        <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;">Online Attendance Code</span>
+                        <input type="text" id="onlineCodeInput" placeholder="Enter your online code" maxlength="10" autocomplete="off" oninput="this.value=this.value.toUpperCase();updateLoginBtn()">
+                        <span style="font-size:11px;color:var(--text-3);margin-top:3px;">Enter your online code</span>
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()" disabled>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/>
+                    <polyline points="16 3 20 7 12 11"/>
+                </svg>
+                Verify & Continue
+            </button>
+            <div class="status-msg" id="loginStatus"></div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Instructions -->
+    <div class="screen" id="screenInstructions">
+        <div class="card-body">
+            <div class="welcome-strip">
+                <div class="welcome-avatar" id="studentAvatar">?</div>
+                <div>
+                    <div class="welcome-name" id="studentName">Welcome!</div>
+                    <div class="welcome-reg"  id="studentReg"></div>
+                </div>
+            </div>
+            <!-- Timer — only shown for EXAM type -->
+            <div class="timer-wrap" id="timerWrap" style="display:none;">
+                <span class="timer-label">Time Allowed</span>
+                <span class="timer-value" id="timerDisplay">45:00</span>
+            </div>
+            <div class="instructions-box" id="instructionsBox">
+                <div class="instructions-title" id="instructionsTitle">Instructions</div>
+                <div class="instructions-list" id="instructionsList"></div>
+            </div>
+            <!-- Online badge — shown for ONLINE students (code already validated at login) -->
+            <div class="online-session-wrap" id="onlineSessionWrap">
+                <div class="online-badge">
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="5"/></svg>
+                    Online Student — Session Verified ✓
+                </div>
+            </div>
+
+            <label class="confirm-wrap">
+                <input type="checkbox" id="confirmCheck" onchange="updateStartBtn()">
+                <span class="confirm-label">I have read and understood the instructions. I confirm this attempt is mine alone.</span>
+            </label>
+            <button class="btn btn-gold" id="startBtn" onclick="handleStart()" disabled>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>
+                <span id="startBtnLabel">Start Now</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Screen 3: Loading (briefly shown before iframe overlay appears) -->
+    <div class="screen" id="screenRedirect">
+        <div class="card-body">
+            <div class="redirect-wrap">
+                <div class="redirect-spinner"></div>
+                <div class="redirect-title" id="loadingTitle">Loading your assessment…</div>
+                <div class="redirect-sub" id="loadingSub">Please wait while your assessment is prepared.</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Fullscreen exam overlay — outside .card so it can cover everything -->
+<div id="examOverlay">
+    <div id="examBar">
+        <div id="examBarLeft">
+            <span class="bar-logo" id="barLogo">RFS Assessment</span>
+            <span class="bar-reg" id="barReg"></span>
+        </div>
+        <div id="examBarRight">
+            <span id="barOnlineBadge" class="bar-online-badge" style="display:none;">Online</span>
+            <span class="bar-timer" id="barTimer" style="display:none;">45:00</span>
+        </div>
+    </div>
+    <div id="iframeBlockedBanner">
+        ⚠️ Your exam could not load here. <a id="blockedLink" href="#" target="_blank">Tap here to open it directly</a> — your session is still active.
+    </div>
+    <iframe id="examFrame" src="about:blank" allow="geolocation" allowfullscreen></iframe>
+    <!-- Submit bar — kept as fallback for students who miss the auto-detect overlay -->
+    <div id="submitBar">
+        <div class="submit-bar-text">
+            <strong id="submitBarTitle">Submitted the form above?</strong>
+            <span id="submitBarSub">After Google Form shows "Your response has been recorded", tap this button.</span>
+        </div>
+        <button id="submitDoneBtn" onclick="confirmSubmitted()">Done — End Session ✓</button>
+    </div>
+<!-- Auto-detect overlay — appears when iframe navigates away (form submitted or link clicked) -->
+<div id="confirmOverlay" style="
+    display:none; position:fixed; inset:0; z-index:10002;
+    background:rgba(10,20,10,0.82); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center; padding:20px;">
+    <div style="
+        background:#fff; border-radius:16px; padding:28px 24px;
+        width:100%; max-width:360px; text-align:center;
+        box-shadow:0 16px 48px rgba(0,0,0,0.4);">
+        <div style="font-size:40px; margin-bottom:16px;" id="confirmOverlayIcon">📋</div>
+        <div style="font-size:17px; font-weight:700; color:#1A2010; margin-bottom:8px;" id="confirmOverlayTitle">Have you submitted?</div>
+        <div style="font-size:13px; color:#4A5540; line-height:1.6; margin-bottom:24px;" id="confirmOverlayText">
+            It looks like you navigated away from the form.<br><br>
+            If you have <strong>already submitted</strong>, tap <em>Yes, I'm Done</em> to end your session.<br><br>
+            If you <strong>haven't submitted yet</strong>, tap <em>Go Back</em> to return to the form.
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button onclick="returnToForm()" style="
+                flex:1; height:46px; border:1.5px solid #dadce0; border-radius:8px;
+                background:#fff; color:#4A5540; font-size:14px; font-weight:600;
+                font-family:'DM Sans',sans-serif; cursor:pointer;">
+                Go Back
+            </button>
+            <button onclick="finalSubmit()" style="
+                flex:1; height:46px; border:none; border-radius:8px;
+                background:#2D6A2D; color:#fff; font-size:14px; font-weight:600;
+                font-family:'DM Sans',sans-serif; cursor:pointer;">
+                Yes, I'm Done ✓
+            </button>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Submitted screen — shown after form is submitted -->
+<div id="submittedScreen">
+    <div class="sub-icon">✅</div>
+    <div class="sub-title" id="subTitle">Submitted!</div>
+    <div class="sub-text" id="subText">Your responses have been recorded. Well done.</div>
+    <div class="sub-reg" id="subReg"></div>
+    <div class="sub-note">You may now close this tab. Do not attempt to go back or retake the exam — a second submission will score zero.</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwty4Y7sigqznjwwMAHSUgYkvPYN1myLxV5CO9gn6Qvu3DgH8X05ZLJBaZN0AYNsyM/exec';
+const SCRIPT_TOKEN = 'RFS_USpA_ADMIN@2026'; // Must match API_TOKEN in exam script
+const EXAM_MINUTES = 45; // Only used for EXAM type assessments
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let verifiedData    = null;
+let timerInterval   = null;
+let secondsLeft     = EXAM_MINUTES * 60;
+let userLocation    = null;   // { latitude, longitude }
+let studentType     = null;   // 'PHYSICAL' or 'ONLINE'
+let assessmentType  = null;   // 'TEST' or 'EXAM' — set from config on load
+let assessmentTopic = null;   // e.g. 'Principles of HOTR' or 'Final Exam'
+let examInProgress  = false;  // true while iframe exam is open
+let examIsOpen      = false;  // result of background check_assessment_open poll
+let examOpenPoller  = null;   // interval ID for background polling
+
+const CAMPUS_LAT     = 6.4369984301299645;
+const CAMPUS_LNG     = 3.493390506792726;
+const MAX_DISTANCE_M = 200;
+
+// ════════════════════════════════════════════════════════════
+//  DOM REFS
+// ════════════════════════════════════════════════════════════
+const regInput    = document.getElementById('regInput');
+const codeInput   = document.getElementById('codeInput');
+const loginBtn    = document.getElementById('loginBtn');
+const loginStatus = document.getElementById('loginStatus');
+const regErr      = document.getElementById('regErr');
+const codeErr     = document.getElementById('codeErr');
+
+// ════════════════════════════════════════════════════════════
+//  INPUT HANDLING
+// ════════════════════════════════════════════════════════════
+regInput.addEventListener('input', function() {
+    this.value = this.value.replace(/[^A-Za-z0-9/]/g, '').toUpperCase();
+    clearErr(regInput, regErr);
+    updateLoginBtn();
+});
+codeInput.addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+    clearErr(codeInput, codeErr);
+    updateLoginBtn();
+});
+regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') codeInput.focus(); });
+codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+
+function updateLoginBtn() {
+    const regOk    = /^RFS\/\d{4}\/\d{3}$/.test(regInput.value.trim());
+    const codeOk   = codeInput.value.trim().length >= 4;
+    const isOnline = document.getElementById('onlineToggle').checked;
+    const onlineOk = !isOnline || document.getElementById('onlineCodeInput').value.trim().length >= 4;
+
+    // Physical students: location must show On campus before Verify unlocks
+    let locationOk = true;
+    if (!isOnline) {
+        const pill = document.getElementById('locPill');
+        locationOk = pill && pill.classList.contains('ok');
+    }
+
+    // Exam must be open (from background check)
+    loginBtn.disabled = !(regOk && codeOk && onlineOk && locationOk && examIsOpen);
+}
+
+function handleOnlineToggle() {
+    const isOnline = document.getElementById('onlineToggle').checked;
+    const field    = document.getElementById('onlineCodeField');
+    const locRow   = document.getElementById('locRow');
+    field.classList.toggle('show', isOnline);
+    // Hide location row if online — they don't need GPS
+    if (locRow) locRow.style.display = isOnline ? 'none' : 'flex';
+    updateLoginBtn();
+}
+function showErr(input, el, msg) { input.classList.add('invalid'); el.textContent = msg; el.classList.add('show'); }
+function clearErr(input, el)     { input.classList.remove('invalid'); el.classList.remove('show'); }
+
+// ════════════════════════════════════════════════════════════
+//  SCREEN TRANSITIONS
+// ════════════════════════════════════════════════════════════
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function resetBtn() {
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"/><polyline points="16 3 20 7 12 11"/></svg>Verify & Continue`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  URL OBFUSCATION — XOR cipher, key = exam code
+//  The form URL is never transmitted in plaintext.
+//  Apps Script encodes it; HTML decodes it using the code
+//  the student already typed — which is never sent back.
+// ════════════════════════════════════════════════════════════
+function xorDecode(encoded, key) {
+    try {
+        const bytes  = atob(encoded);
+        const keyStr = key.toUpperCase();
+        let   result = '';
+        for (let i = 0; i < bytes.length; i++) {
+            result += String.fromCharCode(
+                bytes.charCodeAt(i) ^ keyStr.charCodeAt(i % keyStr.length)
+            );
+        }
+        return result;
+    } catch(e) {
+        return null;
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  SESSION PERSISTENCE — survives refresh/reload on mobile
+// ════════════════════════════════════════════════════════════
+function saveSession(examStarted) {
+    if (!verifiedData) return;
+    try {
+        const session = {
+            verifiedData : verifiedData,
+            studentType  : studentType,
+            examStarted  : examStarted || false,
+            startedAt    : examStarted
+                ? (JSON.parse(sessionStorage.getItem('rfsExamSession') || '{}').startedAt || Date.now())
+                : null,
+            savedAt      : Date.now()
+        };
+        sessionStorage.setItem('rfsExamSession', JSON.stringify(session));
+    } catch(e) { /* sessionStorage unavailable — silent fail */ }
+}
+
+function clearSession() {
+    try { sessionStorage.removeItem('rfsExamSession'); } catch(e) {}
+}
+
+function restoreSession() {
+    try {
+        const raw = sessionStorage.getItem('rfsExamSession');
+        if (!raw) return false;
+
+        const session = JSON.parse(raw);
+        if (!session.verifiedData || !session.verifiedData.formUrl) return false;
+
+        // Check session hasn't expired (EXAM_MINUTES + 5 min grace)
+        const maxAge = (EXAM_MINUTES + 5) * 60 * 1000;
+        const age    = Date.now() - (session.startedAt || session.savedAt);
+        if (age > maxAge) { clearSession(); return false; }
+
+        // Restore state
+        verifiedData = session.verifiedData;
+        studentType  = session.studentType;
+
+        if (session.examStarted && session.startedAt) {
+            // Calculate remaining time from when exam actually started
+            const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
+            secondsLeft   = Math.max(0, EXAM_MINUTES * 60 - elapsed);
+
+            if (secondsLeft <= 0) {
+                // Time already expired — clear and show time-up
+                clearSession();
+                // Brief delay so DOM is ready
+                setTimeout(() => {
+                    document.getElementById('barReg').textContent = verifiedData.regNumber || '';
+                    document.getElementById('timeUpReg').textContent = verifiedData.regNumber || '';
+                    document.getElementById('timeUpScreen').classList.add('active');
+                }, 100);
+                return true;
+            }
+
+            // Reopen exam iframe
+            setTimeout(() => reopenExam(), 100);
+            return true;
+        }
+
+        // Was on instructions screen — restore that
+        setTimeout(() => showInstructions(verifiedData), 100);
+        return true;
+
+    } catch(e) { return false; }
+}
+
+function reopenExam() {
+    if (!verifiedData || !verifiedData.formUrl) return;
+
+    // Populate bar
+    const isExamTypeR = assessmentType === 'EXAM';
+    document.getElementById('barReg').textContent  = verifiedData.regNumber || '';
+    document.getElementById('barLogo').textContent = isExamTypeR ? 'RFS Exam' : 'RFS ' + (assessmentTopic || 'Test');
+    if (studentType === 'ONLINE') {
+        document.getElementById('barOnlineBadge').style.display = 'inline-block';
+    }
+    document.getElementById('barTimer').style.display = isExamTypeR ? 'inline-block' : 'none';
+    const typeWordR = isExamTypeR ? 'exam' : 'test';
+    document.getElementById('submitBarTitle').textContent = 'Done with your ' + typeWordR + '?';
+
+    // Update bar timer display immediately with restored time
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const el = document.getElementById('barTimer');
+    el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    el.className   = 'bar-timer' + (secondsLeft <= 300 ? ' urgent' : '');
+
+    // Reload the form (pre-filled URL still valid)
+    const frame = document.getElementById('examFrame');
+    frame.src = verifiedData.formUrl;
+
+    // Show overlay + submit bar
+    document.getElementById('examOverlay').classList.add('active');
+    document.getElementById('submitBar').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+
+    // Wipe URL from memory
+    verifiedData.formUrl = null;
+    saveSession(true);
+
+    examInProgress = true;
+    startBarTimer();
+
+    // Iframe block detection for restored sessions
+    frame.addEventListener('load', () => {
+        if (frame.src === 'about:blank') return;
+        setTimeout(() => {
+            try {
+                const loc = frame.contentWindow.location.href;
+                if (loc === 'about:blank') showIframeBlocked(formUrl);
+            } catch(e) { /* cross-origin = fine */ }
+        }, 3000);
+    });
+}
+
+// ════════════════════════════════════════════════════════════
+//  GEOLOCATION
+// ════════════════════════════════════════════════════════════
+function calcDistance(lat1, lon1, lat2, lon2) {
+    const R    = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a    = Math.sin(dLat/2) ** 2 +
+                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                 Math.sin(dLon/2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function startLocation() {
+    if (!navigator.geolocation) {
+        setLocPill('Not supported', 'err');
+        return;
+    }
+    function onSuccess(pos) {
+        userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist <= MAX_DISTANCE_M) {
+            setLocPill('On campus', 'ok');
+        } else {
+            setLocPill((dist / 1000).toFixed(2) + 'km away', 'err');
+        }
+        updateLoginBtn();
+    }
+    function onError(err) {
+        if (err.code === 1) setLocPill('Access denied', 'err');
+        else if (err.code === 3) {
+            // Timeout — retry with high accuracy
+            navigator.geolocation.getCurrentPosition(onSuccess, () => setLocPill('Unavailable', 'err'),
+                { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
+        } else setLocPill('Unavailable', 'err');
+    }
+    navigator.geolocation.getCurrentPosition(onSuccess, onError,
+        { timeout: 8000, enableHighAccuracy: true, maximumAge: 60000 });
+}
+
+function setLocPill(text, state) {
+    const pill = document.getElementById('locPill');
+    if (!pill) return;
+    pill.textContent = text;
+    pill.className   = 'loc-pill ' + state;
+}
+
+// ════════════════════════════════════════════════════════════
+//  ASSESSMENT CONFIG LOAD — runs on page load
+//  Fetches assessment type + topic from Config sheet
+//  Shows/hides banner, enables/disables Verify button
+// ════════════════════════════════════════════════════════════
+async function checkAssessmentOpen() {
+    try {
+        const url  = SCRIPT_URL + '?action=check_assessment_open&token=' + encodeURIComponent(SCRIPT_TOKEN) + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        const isOpen  = data.status === 'success' && data.open === true;
+        const banner  = document.getElementById('examClosedBanner');
+        const wasOpen = examIsOpen;
+        examIsOpen    = isOpen;
+
+        // Populate header with assessment info from config
+        if (data.status === 'success') {
+            assessmentType  = data.assessmentType || 'EXAM'; // 'TEST' or 'EXAM'
+            assessmentTopic = data.topic          || '';
+
+            const title = document.getElementById('assessmentTitle');
+            const badge = document.getElementById('assessmentTypeBadge');
+            const time  = document.getElementById('assessmentTimeBadge');
+
+            title.textContent   = assessmentTopic || (assessmentType === 'TEST' ? 'Test' : 'Examination');
+            badge.textContent   = assessmentType;
+            badge.style.display = 'inline-block';
+
+            if (assessmentType === 'EXAM') {
+                time.style.display = 'inline-block';
+            }
+        }
+
+        if (isOpen) {
+            banner.classList.remove('show');
+            updateLoginBtn();
+            if (!wasOpen && examOpenPoller) {
+                clearInterval(examOpenPoller);
+                examOpenPoller = null;
+            }
+        } else {
+            banner.classList.add('show');
+            loginBtn.disabled = true;
+        }
+    } catch(e) {
+        // Network error — don't block the UI, just leave current state
+    }
+}
+
+function startExamOpenPolling() {
+    checkAssessmentOpen();
+    examOpenPoller = setInterval(checkAssessmentOpen, 30000);
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 1 — VERIFY  (plain fetch — same as check-in app)
+// ════════════════════════════════════════════════════════════
+async function handleLogin() {
+    const reg  = regInput.value.trim();
+    const code = codeInput.value.trim();
+
+    if (!/^RFS\/\d{4}\/\d{3}$/.test(reg)) { showErr(regInput, regErr, 'Format must be RFS/XXXX/XXX'); return; }
+    if (code.length < 4)                   { showErr(codeInput, codeErr, 'Please enter your exam code'); return; }
+
+    loginBtn.disabled  = true;
+    loginBtn.innerHTML = '<span style="font-size:14px">Checking exam status…</span>';
+    loginStatus.className = 'status-msg';
+
+    const isOnline   = document.getElementById('onlineToggle').checked;
+    const onlineCode = isOnline ? document.getElementById('onlineCodeInput').value.trim() : '';
+
+    try {
+        // ── Step 1: For online students, validate session code FIRST
+        //    before consuming the exam code ──
+        if (isOnline) {
+            loginBtn.innerHTML = '<span style="font-size:14px">Checking session code…</span>';
+            const scUrl = SCRIPT_URL
+                + '?action=validate_session_code'
+                + '&token=' + encodeURIComponent(SCRIPT_TOKEN)
+                + '&code=' + encodeURIComponent(onlineCode)
+                + '&cb='   + Date.now();
+            const scRes  = await fetch(scUrl);
+            const scData = await scRes.json();
+            if (scData.status !== 'success') {
+                loginStatus.textContent = scData.message || 'Invalid session code. Please check and try again.';
+                loginStatus.className   = 'status-msg error';
+                resetBtn();
+                return;
+            }
+            loginBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
+        }
+
+        // ── Step 2: Verify exam credentials + consume the code ──
+        const url = SCRIPT_URL
+            + '?action=verify_assessment'
+            + '&token='    + encodeURIComponent(SCRIPT_TOKEN)
+            + '&reg='      + encodeURIComponent(reg)
+            + '&code='     + encodeURIComponent(code)
+            + '&isOnline=' + (isOnline ? 'true' : 'false')
+            + '&lat='      + (userLocation ? userLocation.latitude  : '')
+            + '&lng='      + (userLocation ? userLocation.longitude : '')
+            + '&cb='       + Date.now();
+
+        const response = await fetch(url);
+        const data     = await response.json();
+
+        if (data.status !== 'success') {
+            loginStatus.textContent = data.message || 'Verification failed. Please try again.';
+            loginStatus.className   = 'status-msg error';
+            resetBtn();
+            return;
+        }
+
+        data.formUrl = xorDecode(data.encodedUrl, code);
+        verifiedData = data;
+        studentType     = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
+        assessmentType  = data.assessmentType  || assessmentType  || 'EXAM';
+        assessmentTopic = data.topic           || assessmentTopic || '';
+
+        // Save session so a refresh/reload can restore it
+        saveSession();
+
+        // Stop background polling — no longer needed once verified
+        if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
+
+        showInstructions(data);
+
+    } catch(err) {
+        loginStatus.textContent = 'Connection error — please check your internet and try again.';
+        loginStatus.className   = 'status-msg error';
+        resetBtn();
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 2 — INSTRUCTIONS
+// ════════════════════════════════════════════════════════════
+// TEST instructions (no timer)
+const TEST_INSTRUCTIONS = [
+    'Do <strong>not</strong> take this test if you are not in class.',
+    'Attempt <strong>all questions</strong>.',
+    'Do <strong>not</strong> retake the test after submission — a second submission will score zero.',
+    'Ensure your registration number is pre-filled correctly before answering.',
+    'Provide your registered phone number using the required format.',
+    '<strong>Wish you all the best!</strong>'
+];
+
+// EXAM instructions (with timer)
+const EXAM_INSTRUCTIONS = [
+    'Do <strong>not</strong> take this exam if you are not in class.',
+    'Attempt <strong>all questions</strong>.',
+    'Do <strong>not</strong> retake the exam after submission — a second submission will score zero.',
+    'Ensure your registration number is pre-filled correctly before answering.',
+    'Provide your registered phone number in the required format.',
+    'The exam duration is <strong>45 minutes</strong> from when the link goes live.',
+    '<strong>If you lose connection mid-exam, do not panic.</strong> Google Forms saves your answers automatically. Reconnect and continue from where you stopped.',
+    '<strong>Wish you all the best!</strong>'
+];
+
+function showInstructions(data) {
+    const initials = data.firstName
+        ? (data.firstName.charAt(0) + (data.name.split(' ').pop() || '').charAt(0)).toUpperCase()
+        : data.name.substring(0, 2).toUpperCase();
+
+    document.getElementById('studentAvatar').textContent = initials;
+    document.getElementById('studentName').textContent   = 'Welcome, ' + data.name + '!';
+    document.getElementById('studentReg').textContent    = data.regNumber;
+
+    const isExam = assessmentType === 'EXAM';
+
+    // Timer — only for EXAM
+    const timerWrap = document.getElementById('timerWrap');
+    if (isExam) {
+        secondsLeft = EXAM_MINUTES * 60;
+        updateTimerDisplay();
+        timerWrap.style.display = 'flex';
+    } else {
+        timerWrap.style.display = 'none';
+    }
+
+    // Instructions — TEST or EXAM set
+    const instructions = isExam ? EXAM_INSTRUCTIONS : TEST_INSTRUCTIONS;
+    document.getElementById('instructionsTitle').textContent = isExam ? 'Exam Instructions' : 'Test Instructions';
+    document.getElementById('instructionsList').innerHTML = instructions.map((text, i) =>
+        '<div class="inst-row"><div class="inst-num">' + (i + 1) + '</div><div class="inst-text">' + text + '</div></div>'
+    ).join('');
+
+    // Start button label
+    document.getElementById('startBtnLabel').textContent = isExam ? 'Start Exam Now' : 'Start Test Now';
+
+    // Online badge
+    const onlineWrap = document.getElementById('onlineSessionWrap');
+    if (onlineWrap) {
+        if (studentType === 'ONLINE') onlineWrap.classList.add('show');
+        else onlineWrap.classList.remove('show');
+    }
+
+    document.getElementById('confirmCheck').checked = false;
+    document.getElementById('startBtn').disabled    = true;
+    showScreen('screenInstructions');
+}
+
+function updateTimerDisplay() {
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const d = document.getElementById('timerDisplay');
+    d.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    d.className   = 'timer-value' + (secondsLeft <= 300 ? ' urgent' : '');
+}
+
+function updateStartBtn() {
+    const confirmed = document.getElementById('confirmCheck').checked;
+    document.getElementById('startBtn').disabled = !confirmed;
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 3 — START + REDIRECT
+// ════════════════════════════════════════════════════════════
+async function handleStart() {
+    if (!verifiedData) return;
+
+    const startBtn = document.getElementById('startBtn');
+    startBtn.disabled  = true;
+    startBtn.innerHTML = '<span style="font-size:14px">Checking…</span>';
+
+    // ── Physical students: enforce location ──
+    if (studentType === 'PHYSICAL') {
+        if (!userLocation) {
+            startBtn.disabled  = false;
+            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
+            alert('Your location is not available yet. Please allow location access and try again.');
+            return;
+        }
+        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist > MAX_DISTANCE_M) {
+            startBtn.disabled  = false;
+            startBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Start Exam Now';
+            alert('You must be on campus to take this exam. You are ' + (dist / 1000).toFixed(2) + 'km away. Please contact admin if this is an error.');
+            return;
+        }
+    }
+
+
+        // ── All checks passed — start ──
+    // Update loading screen text based on type
+    const isExamLoad = assessmentType === 'EXAM';
+    document.getElementById('loadingTitle').textContent = isExamLoad ? 'Loading your exam…' : 'Loading your test…';
+    document.getElementById('loadingSub').textContent   = isExamLoad ? 'Please wait while your exam is prepared.' : 'Please wait while your test is prepared.';
+    showScreen('screenRedirect');
+    // Record exam start time for session restore
+    saveSession(true);
+    setTimeout(doRedirect, 1800);
+}
+
+// ════════════════════════════════════════════════════════════
+//  BAR TIMER — runs independently inside the overlay
+// ════════════════════════════════════════════════════════════
+let barTimerInterval = null;
+
+function startBarTimer() {
+    const el = document.getElementById('barTimer');
+    function tick() {
+        if (secondsLeft <= 0) {
+            clearInterval(barTimerInterval);
+            el.textContent = '00:00';
+            el.className   = 'bar-timer urgent';
+            showTimeUp();
+            return;
+        }
+        secondsLeft--;
+        const m = Math.floor(secondsLeft / 60);
+        const s = secondsLeft % 60;
+        el.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        el.className   = 'bar-timer' + (secondsLeft <= 300 ? ' urgent' : '');
+    }
+    barTimerInterval = setInterval(tick, 1000);
+}
+
+function showTimeUp() {
+    clearInterval(barTimerInterval);
+    clearInterval(timerInterval);
+    examInProgress = false;
+    clearSession(); // session expired — prevent restore
+
+    const reg = document.getElementById('barReg').textContent || '';
+    document.getElementById('timeUpReg').textContent = reg;
+    document.getElementById('timeUpScreen').classList.add('active');
+}
+
+function doRedirect() {
+    if (!verifiedData || !verifiedData.formUrl) return;
+
+    const formUrl = verifiedData.formUrl;
+
+    // Populate status bar
+    const isExamType = assessmentType === 'EXAM';
+    document.getElementById('barReg').textContent  = verifiedData.regNumber || '';
+    document.getElementById('barLogo').textContent = isExamType ? 'RFS Exam' : 'RFS ' + (assessmentTopic || 'Test');
+    if (studentType === 'ONLINE') {
+        document.getElementById('barOnlineBadge').style.display = 'inline-block';
+    }
+    // Timer — only show for EXAM
+    document.getElementById('barTimer').style.display = isExamType ? 'inline-block' : 'none';
+    // Bottom bar text
+    const typeWord = isExamType ? 'exam' : 'test';
+    document.getElementById('submitBarTitle').textContent = 'Done with your ' + typeWord + '?';
+    document.getElementById('submitBarSub').textContent   = 'Only tap after you have submitted the form above.';
+
+    // Set iframe src
+    const frame = document.getElementById('examFrame');
+    frame.src = formUrl;
+
+    // Show overlay + submit bar
+    document.getElementById('examOverlay').classList.add('active');
+    document.getElementById('submitBar').classList.add('visible');
+
+    // Lock body scroll so only the iframe scrolls
+    document.body.style.overflow = 'hidden';
+
+    // Wipe URL from memory immediately
+    verifiedData.formUrl = null;
+
+    // Activate beforeunload warning — cannot suppress alert() but CAN show browser warning
+    examInProgress = true;
+
+    // Start bar countdown
+    startBarTimer();
+
+    // ── Iframe block detection ───────────────────────────────────
+    frame.addEventListener('load', () => {
+        if (frame.src === 'about:blank') return;
+        setTimeout(() => {
+            try {
+                const loc = frame.contentWindow.location.href;
+                if (loc === 'about:blank') showIframeBlocked(formUrl);
+            } catch(e) { /* cross-origin = fine */ }
+        }, 3000);
+    });
+}
+
+// ── Confirm overlay — shown automatically when iframe navigates ──
+function showConfirmOverlay() {
+    if (!examInProgress) return; // already ended — don't show again
+    const isExamType = assessmentType === 'EXAM';
+    const typeWord   = isExamType ? 'exam' : 'test';
+    document.getElementById('confirmOverlayTitle').textContent = 'Have you submitted your ' + typeWord + '?';
+    document.getElementById('confirmOverlayIcon').textContent  = isExamType ? '📝' : '📋';
+    document.getElementById('confirmOverlayText').innerHTML    =
+        'It looks like you navigated away from the form.<br><br>'
+        + 'If you have <strong>already submitted</strong>, tap <em>Yes, I Am Done</em> to end your session.<br><br>'
+        + 'If you have <strong>not submitted yet</strong>, tap <em>Go Back</em> to return to the form.';
+    document.getElementById('confirmOverlay').style.display = 'flex';
+}
+
+// Manual fallback — submit bar button still works
+function confirmSubmitted() {
+    showConfirmOverlay();
+}
+
+// Go Back — reload the form URL from session, close overlay
+function returnToForm() {
+    document.getElementById('confirmOverlay').style.display = 'none';
+    // Reload form — we need the URL from session storage since we wiped it from memory
+    try {
+        const raw = sessionStorage.getItem('rfsExamSession');
+        if (raw) {
+            const session = JSON.parse(raw);
+            // formUrl is wiped after first load for security — we can't reload
+            // Instead show a message directing them to use the submit button
+        }
+    } catch(e) {}
+    // The form URL has already been wiped from memory for security.
+    // Show a gentle message telling them to use the submit bar if they need to go back.
+    const frame = document.getElementById('examFrame');
+    if (frame.src === 'about:blank') {
+        // Can't go back — form URL is gone for security reasons
+        document.getElementById('confirmOverlayTitle').textContent = 'Form already closed';
+        document.getElementById('confirmOverlayText').innerHTML    =
+            'For security, the form link cannot be reopened after navigating away.<br><br>'
+            + 'If you have submitted, tap <em>Yes, I Am Done</em>.<br>'
+            + 'If you have not submitted yet, please contact admin.';
+        document.getElementById('confirmOverlayIcon').textContent = '⚠️';
+        // Hide Go Back, keep Yes button
+        const goBackBtn = document.querySelector('#confirmOverlay button:first-of-type');
+        if (goBackBtn) goBackBtn.style.display = 'none';
+    }
+}
+
+function finalSubmit() {
+    document.getElementById('confirmOverlay').style.display = 'none';
+    examInProgress = false;
+    showSubmitted();
+}
+
+function showIframeBlocked(formUrl) {
+    const banner = document.getElementById('iframeBlockedBanner');
+    const link   = document.getElementById('blockedLink');
+    link.href    = formUrl;
+    banner.style.display = 'block';
+}
+
+function showSubmitted() {
+    clearInterval(barTimerInterval);
+    clearInterval(timerInterval);
+    examInProgress = false;
+    clearSession(); // session done — prevent restore on next load
+
+    const reg    = document.getElementById('barReg').textContent || (verifiedData && verifiedData.regNumber) || '';
+    const isExam = assessmentType === 'EXAM';
+    document.getElementById('subReg').textContent   = reg;
+    document.getElementById('subTitle').textContent = isExam ? 'Exam Submitted!' : 'Test Submitted!';
+    document.getElementById('subText').textContent  = isExam
+        ? 'Your responses have been recorded. Well done for completing the exam.'
+        : 'Your responses have been recorded. Well done for completing the test.';
+    document.getElementById('submittedScreen').classList.add('active');
+}
+
+// Submission detection: student taps "I Have Submitted" button manually (see confirmSubmitted)
+// ════════════════════════════════════════════════════════════
+//  INIT — Restore session if exists, otherwise start GPS
+//         and begin background assessment-open polling.
+// ════════════════════════════════════════════════════════════
+if (!restoreSession()) {
+    // No active session — normal flow
+    startLocation();           // start GPS immediately
+    startExamOpenPolling();    // check + poll exam open status in background
+}
+
+// Warn student if they try to refresh or leave during exam
+window.addEventListener('beforeunload', function(e) {
+    if (examInProgress) {
+        e.preventDefault();
+        e.returnValue = 'Your exam is in progress. Leaving will not cancel your attempt but you may lose your place.';
+        return e.returnValue;
+    }
+});
+</script>
+</body>
+</html>
