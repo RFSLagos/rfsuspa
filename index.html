@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFS Student Sign-In</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-card:       #FFFFFF;
+            --bg-surface:    #F3F5F0;
+            --bg-input:      #FAFAF8;
+            --accent:        #2D6A2D;
+            --accent-dim:    rgba(45,106,45,0.10);
+            --success-bg:    #EAF5E4;
+            --success-text:  #1A5C1A;
+            --error-bg:      #FEF0F0;
+            --error-text:    #C0392B;
+            --warning-bg:    #FEF9E7;
+            --warning-text:  #7D5A00;
+            --text-primary:  #1A2010;
+            --text-secondary:#4A5540;
+            --text-muted:    #8A9A80;
+            --border:        rgba(0,0,0,0.08);
+            --border-focus:  #4A9E2F;
+            --radius-sm:     8px;
+            --radius-md:     12px;
+            --radius-lg:     20px;
+            --shadow-card:   0 8px 48px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: #1a2a1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px 16px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url('hotr-bg.jpg');
+            background-size: cover;
+            background-position: center 30%;
+            background-repeat: no-repeat;
+            filter: blur(3px) brightness(0.38) saturate(0.7);
+            transform: scale(1.05);
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 30%, rgba(10,25,10,0.55) 100%);
+            z-index: 0;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            width: 100%;
+            max-width: 440px;
+            overflow: hidden;
+            animation: rise 0.4s cubic-bezier(.22,.68,0,1.2) both;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* ── Header ── */
+        .card-header {
+            padding: 28px 28px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .school-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .logo-mark { flex-shrink: 0; }
+        .brand-divider { width: 1px; height: 34px; background: rgba(0,0,0,0.15); flex-shrink: 0; }
+        .brand-text { display: flex; flex-direction: column; gap: 2px; }
+        .brand-church { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #26361b; line-height: 1.2; }
+        .brand-school { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #7ac042; line-height: 1.2; }
+
+        .card-title { font-size: 22px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+
+        /* ── Session banner — shows class/year/stream/event ── */
+        .session-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .session-tag {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 99px;
+            letter-spacing: 0.04em;
+        }
+
+        .tag-class   { background: #E8F5E4; color: #2D6A2D; }
+        .tag-stream  { background: #EDF3FF; color: #1A3A8A; }
+        .tag-event   { background: #FEF9E7; color: #7D5A00; }
+        .tag-event.sun    { background: #E8F5E4; color: #2D6A2D; }
+        .tag-event.sat-in  { background: #FFF3E0; color: #8A4000; }
+        .tag-event.sat-out { background: #FCE4EC; color: #8A002A; }
+        .tag-event.closed  { background: var(--error-bg); color: var(--error-text); }
+
+        /* ── Preview strip ── */
+        .preview-strip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            margin-bottom: 20px;
+        }
+
+        .preview-icon {
+            width: 32px; height: 32px;
+            border-radius: var(--radius-sm);
+            background: var(--accent-dim);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .preview-icon svg { width: 16px; height: 16px; color: var(--accent); }
+        .preview-content { flex: 1; min-width: 0; }
+        .preview-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
+        .preview-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .preview-number { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; color: var(--text-primary); letter-spacing: 0.04em; white-space: nowrap; }
+        .preview-number .ph { color: var(--text-muted); }
+        .preview-number .filled { color: var(--accent); }
+
+        .loc-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; transition: background 0.2s, color 0.2s; flex-shrink: 0; }
+        .loc-pill.loading { background: #FEF3C7; color: #92400E; }
+        .loc-pill.ok      { background: var(--success-bg); color: var(--success-text); }
+        .loc-pill.err     { background: var(--error-bg); color: var(--error-text); }
+
+        /* ── Body ── */
+        .card-body { padding: 24px 28px 28px; }
+
+        /* ── Field grid ── */
+        .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+        .field { display: flex; flex-direction: column; gap: 6px; }
+        .field label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+        .field .hint { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+        .field .err-text { font-size: 11px; color: var(--error-text); display: none; }
+        .field .err-text.show { display: block; }
+
+        /* ── Online mode toggle ── */
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            background: var(--bg-surface);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .mode-toggle input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+        .mode-toggle-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+
+        /* ── Online code field ── */
+        .online-code-wrap {
+            margin-bottom: 16px;
+            display: none;
+        }
+        .online-code-wrap.show { display: block; }
+
+        input[type="text"] {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Mono', monospace;
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--text-primary);
+            letter-spacing: 0.06em;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+            -webkit-appearance: none;
+        }
+        input[type="text"]::placeholder { color: var(--text-muted); }
+        input[type="text"]:focus { border-color: var(--border-focus); background: #fff; box-shadow: 0 0 0 3px var(--accent-dim); }
+        input[type="text"].invalid { border-color: #E24B4A; box-shadow: 0 0 0 3px rgba(226,75,74,0.10); }
+
+        /* ── Submit ── */
+        .submit-btn {
+            width: 100%;
+            height: 48px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        .submit-btn:enabled { background: var(--accent); color: #fff; }
+        .submit-btn:disabled { background: var(--bg-surface); color: var(--text-muted); cursor: not-allowed; }
+        .submit-btn:enabled:hover  { opacity: 0.88; }
+        .submit-btn:enabled:active { transform: scale(0.98); }
+
+
+
+       /* ── Test mode banner ── */
+        .test-mode-banner {
+            display: none; /* Controlled by JS .show class */
+            background: #FFF3CD;
+            border-bottom: 2px solid #FFD700;
+            padding: 10px 16px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #856404;
+            letter-spacing: 0.03em;
+            width: 100%;
+            /* No position: absolute/relative needed if inside the card flow */
+        }
+        .test-mode-banner.show { 
+            display: block; 
+        }
+
+        /* ── Two-stage identity flow ── */
+        .field-grid, #confirmBtn {
+            transition: opacity 0.2s ease;
+        }
+        .identity-card {
+            display: none;
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-top: 10px;
+            border: 2px solid var(--accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            animation: fadeSlideIn 0.3s ease both;
+        }
+        .identity-card.show { display: block; }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .identity-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .identity-welcome {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+
+        .identity-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .identity-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .identity-btn {
+            flex: 1;
+            height: 42px;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: opacity 0.15s, transform 0.1s;
+            border: none;
+        }
+        .identity-btn:active { transform: scale(0.98); }
+        .identity-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .identity-btn-secondary {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .identity-btn-secondary:hover { background: var(--bg-surface); }
+
+        .identity-btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .identity-btn-primary:hover { opacity: 0.88; }
+
+        /* ── Closed screen ── */
+        .closed-screen {
+            text-align: center;
+            padding: 20px 0 8px;
+            display: none;
+        }
+        .closed-screen.show { display: block; }
+        .closed-icon { font-size: 32px; margin-bottom: 10px; }
+        .closed-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+        .closed-msg { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+        /* ── Status message ── */
+        #statusMessage {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+            line-height: 1.5;
+        }
+        #statusMessage.success { background: var(--success-bg); color: var(--success-text); display: block; }
+        #statusMessage.error   { background: var(--error-bg);   color: var(--error-text);   display: block; }
+        #statusMessage.warning { background: var(--warning-bg); color: var(--warning-text); display: block; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="test-mode-banner" id="testModeBanner">⚠ Test Mode Active — Your entry will be marked as TEST</div>
+
+    <div class="card-header">
+        <div class="school-brand">
+            <svg class="logo-mark" viewBox="0 0 1535.61 720.7" width="64" height="30" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>
+                <path fill="#26361b" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>
+                <path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/>
+            </svg>
+            <div class="brand-divider"></div>
+            <div class="brand-text">
+                <span class="brand-church">House on the Rock Lagos</span>
+                <span class="brand-school">Rock Foundation School</span>
+            </div>
+        </div>
+        <h1 class="card-title" id="cardTitle">Student Sign-In</h1>
+        <div class="session-banner" id="sessionBanner"></div>
+    </div>
+
+    <div class="card-body">
+
+        <!-- Live preview strip -->
+        <div class="preview-strip">
+            <div class="preview-icon">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="14" height="13" rx="2"/>
+                    <path d="M7 4V2M13 4V2M3 8h14"/>
+                </svg>
+            </div>
+            <div class="preview-content">
+                <div class="preview-eyebrow">Registration Number</div>
+                <div class="preview-row">
+                    <div class="preview-number">
+                        RFS&nbsp;/&nbsp;<span id="yearStreamDisplay" class="ph">____</span>&nbsp;/&nbsp;<span id="serialDisplay" class="ph">___</span>
+                    </div>
+                    <div class="loc-pill loading" id="locationStatus">Locating…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Closed screen — shown when no window is active -->
+        <div class="closed-screen" id="closedScreen">
+            <div class="closed-icon">🔒</div>
+            <div class="closed-title" id="closedTitle">Attendance window is closed</div>
+            <div class="closed-msg" id="closedMsg">Sign-in is not currently open. Please wait for the session to begin.</div>
+        </div>
+
+        <!-- Check-in form — shown when a window is active -->
+        <form id="checkInForm" novalidate>
+
+            <!-- Online mode toggle -->
+            <label class="mode-toggle" id="modeToggleWrap">
+                <input type="checkbox" id="onlineToggle">
+                <span class="mode-toggle-label">I am attending online</span>
+            </label>
+
+            <!-- Online code field -->
+            <div class="online-code-wrap" id="onlineCodeWrap">
+                <div class="field">
+                    <label for="onlineCode">Online Attendance Code</label>
+                    <input type="text" id="onlineCode" placeholder="0000" maxlength="6" autocomplete="off" inputmode="numeric">
+                    <span class="hint">Enter the code shown on the screen</span>
+                    <span class="err-text" id="onlineCodeError"></span>
+                </div>
+            </div>
+
+            <!-- Stage 2: Identity card — shown after verify, hides inputs -->
+            <div class="identity-card" id="identityCard">
+                <div class="identity-avatar" id="identityAvatar">?</div>
+                <div class="identity-body">
+                    <div class="identity-welcome" id="identityWelcome">Welcome!</div>
+                    <div class="identity-sub" id="identitySubA">Is this you? Confirm to proceed with Sign In.</div>
+                </div>
+                <div class="identity-actions">
+                    <button type="button" class="identity-btn identity-btn-secondary" id="notMeBtn" onclick="resetToStageOne()">
+                        Not me
+                    </button>
+                    <button type="button" class="identity-btn identity-btn-primary" id="checkinBtn">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 8 7 12 13 4"/>
+                        </svg>
+                        <span>Sign In Now</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reg number fields -->
+            <div class="field-grid">
+                <div class="field">
+                    <label for="yearStream">Year &amp; Stream</label>
+                    <input type="text" id="yearStream" maxlength="4" placeholder="2601" autocomplete="off" inputmode="numeric">
+                    <span class="hint">Year (20–99) + Stream (01–03)</span>
+                    <span class="err-text" id="yearStreamError"></span>
+                </div>
+                <div class="field">
+                    <label for="serial">Student Number</label>
+                    <input type="text" id="serial" maxlength="3" placeholder="001" autocomplete="off" inputmode="numeric">
+                    <span class="hint">001 to 999</span>
+                    <span class="err-text" id="serialError"></span>
+                </div>
+            </div>
+
+            <!-- Stage 1: Confirm Identity button -->
+            <button type="submit" class="submit-btn" id="confirmBtn" disabled>
+                <span class="btn-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/>
+                    </svg>
+                </span>
+                <span>Confirm Identity</span>
+            </button>
+        </form>
+
+        <!-- Stage 2: Identity confirmation card (hidden until verify succeeds) -->
+        <div class="identity-card" id="identityCard">
+            <div class="identity-avatar" id="identityAvatar">?</div>
+            <div class="identity-body">
+                <div class="identity-welcome" id="identityWelcome">Welcome!</div>
+                <div class="identity-sub" id="identitySubB">Is this you? Confirm to proceed with Sign In.</div>
+            </div>
+            <div class="identity-actions">
+                <button class="identity-btn identity-btn-secondary" id="notMeBtn" onclick="resetToStageOne()">
+                    Not me
+                </button>
+                <button class="identity-btn identity-btn-primary" id="checkinBtn">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 8 7 12 13 4"/>
+                    </svg>
+                    <span id="btnLabel">Sign In Now</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="statusMessage"></div>
+    </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  CONFIG — update SCRIPT_URL after deploying new Apps Script
+// ════════════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzu754-2QmirZ9GfIQCzaEYXG-EplYRZgYqNUvRWkzkLPSYWvU0jgJ_e3KI9HloAO0/exec';
+const SCRIPT_TOKEN = 'RFS_USpA_ADMIN@2026'; // Must match API_TOKEN in checkin script
+const CAMPUS_LAT     = 6.44104736820527;
+const CAMPUS_LNG     = 3.501550576923307;
+const MAX_DISTANCE_M = 200;
+
+// ════════════════════════════════════════════════════════════
+//  READ URL PARAMS — class, year, stream determine everything
+//  e.g. ?class=FTR&year=2026&stream=1
+// ════════════════════════════════════════════════════════════
+const params    = new URLSearchParams(window.location.search);
+const CLASS_NAME = (params.get('class')  || 'FTR').toUpperCase();
+const YEAR       = (params.get('year')   || '');
+const STREAM     = (params.get('stream') || '');
+
+// ── DOM refs ──────────────────────────────────────────────
+const yearStreamInput   = document.getElementById('yearStream');
+const serialInput       = document.getElementById('serial');
+const yearStreamDisplay = document.getElementById('yearStreamDisplay');
+const serialDisplay     = document.getElementById('serialDisplay');
+const yearStreamError   = document.getElementById('yearStreamError');
+const serialError       = document.getElementById('serialError');
+const onlineCodeError   = document.getElementById('onlineCodeError');
+const locPill           = document.getElementById('locationStatus');
+const statusMessage     = document.getElementById('statusMessage');
+const form              = document.getElementById('checkInForm');
+const onlineToggle      = document.getElementById('onlineToggle');
+const onlineCodeWrap    = document.getElementById('onlineCodeWrap');
+const onlineCodeInput   = document.getElementById('onlineCode');
+const btnLabel          = document.getElementById('btnLabel');
+const closedScreen      = document.getElementById('closedScreen');
+const closedTitle       = document.getElementById('closedTitle');
+const closedMsg         = document.getElementById('closedMsg');
+const sessionBanner     = document.getElementById('sessionBanner');
+const cardTitle         = document.getElementById('cardTitle');
+
+// ── State ─────────────────────────────────────────────────
+let userLocation  = null;
+let currentEvent  = null;   // 'SUN', 'SAT-IN', 'SAT-OUT'
+let isOnline      = false;
+let isTestMode    = false;
+
+// ════════════════════════════════════════════════════════════
+//  INIT — runs on page load
+// ════════════════════════════════════════════════════════════
+(async function init() {
+    // Validate URL params — if missing, show a friendly prompt
+    if (!YEAR || !STREAM) {
+        showClosed(
+            'No session selected',
+            'Please use the sign-in link shared by your class coordinator. If you think this is an error, contact admin.'
+        );
+        // Still try to get location in background
+        getLocation();
+        return;
+    }
+
+    // Fetch session status from Apps Script
+    await fetchSessionStatus();
+
+    // Start location
+    getLocation();
+})();
+
+// ════════════════════════════════════════════════════════════
+//  FETCH SESSION STATUS
+//  Asks Apps Script what mode is currently active
+// ════════════════════════════════════════════════════════════
+async function fetchSessionStatus() {
+    try {
+        const url = SCRIPT_URL
+            + '?action=get_status'
+            + '&class='  + encodeURIComponent(CLASS_NAME)
+            + '&year='   + encodeURIComponent(YEAR)
+            + '&stream=' + encodeURIComponent(STREAM);
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            showClosed('Configuration error', data.message || 'Could not load session config. Contact admin.');
+            return;
+        }
+
+        applySessionStatus(data);
+
+    } catch(err) {
+        // If status fetch fails, still show form — let submit handle errors
+        showForm('SUN');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  APPLY SESSION STATUS
+//  Decides what the user sees based on day + open windows
+// ════════════════════════════════════════════════════════════
+function applySessionStatus(data) {
+    const day      = data.dayOfWeek;
+    const sunOpen  = data.sunOpen;
+    const satMode  = data.satMode;
+    const testMode = data.testMode;
+
+    // Update test mode state and banner
+    isTestMode = !!testMode;
+    const banner = document.getElementById('testModeBanner');
+    if (isTestMode) banner.classList.add('show');
+    else banner.classList.remove('show');
+
+    // Build session tags
+    renderBanner(data);
+
+    // Test mode — always show form regardless of day/time
+    if (testMode) {
+        showForm('SUN');
+        return;
+    }
+
+    if (day === 0 && sunOpen) {
+        showForm('SUN');
+        return;
+    }
+
+    if (day === 6) {
+        if (satMode === 'CHECKIN-OPEN') {
+            showForm('SAT-IN');
+            return;
+        }
+        if (satMode === 'CHECKOUT-OPEN') {
+            showForm('SAT-OUT');
+            return;
+        }
+    }
+
+    // Nothing open
+    if (day === 0 && !sunOpen) {
+        showClosed('Window not open yet', 'Sunday attendance opens at 7:30 AM and closes at 8:10 AM.');
+    } else if (day === 6) {
+        showClosed('Window closed', 'Saturday sign-in/sign-out is not currently open. Wait for admin to open it.');
+    } else {
+        showClosed('No class today', 'Sign-in is only available on Sundays and scheduled Saturdays.');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER SESSION BANNER TAGS
+// ════════════════════════════════════════════════════════════
+function renderBanner(data) {
+    const eventLabels = {
+        'SUN'     : { label: 'Sunday Class',   cls: 'sun' },
+        'SAT-IN'  : { label: 'Saturday Sign-In',  cls: 'sat-in' },
+        'SAT-OUT' : { label: 'Saturday Sign-Out', cls: 'sat-out' },
+        'CLOSED'  : { label: 'Closed',         cls: 'closed' }
+    };
+
+    let eventKey = 'CLOSED';
+    if (data.sunOpen && data.dayOfWeek === 0)  eventKey = 'SUN';
+    if (data.satMode === 'CHECKIN-OPEN')        eventKey = 'SAT-IN';
+    if (data.satMode === 'CHECKOUT-OPEN')       eventKey = 'SAT-OUT';
+
+    const ev = eventLabels[eventKey];
+
+    sessionBanner.innerHTML =
+        '<span class="session-tag tag-class">'  + CLASS_NAME + '</span>' +
+        '<span class="session-tag tag-stream">Year ' + data.year + ' · Stream ' + data.stream + '</span>' +
+        '<span class="session-tag tag-event ' + ev.cls + '">' + ev.label + '</span>';
+}
+
+// ════════════════════════════════════════════════════════════
+//  SHOW / HIDE STATES
+// ════════════════════════════════════════════════════════════
+function showForm(eventType) {
+    currentEvent = eventType;
+    closedScreen.classList.remove('show');
+    form.style.display = 'block';
+
+    // Update all button labels and sub-texts based on event type
+    const isOut  = eventType === 'SAT-OUT';
+    const btnTxt = isOut ? 'Sign Out Now' : 'Sign In Now';
+    const subTxt = isOut ? 'Is this you? Confirm to proceed with Sign Out.' : 'Is this you? Confirm to proceed with Sign In.';
+    document.querySelectorAll('#btnLabel, #checkinBtn span:last-child').forEach(function(el) { el.textContent = btnTxt; });
+    document.querySelectorAll('#identitySubA, #identitySubB').forEach(function(el) { el.textContent = subTxt; });
+    if (eventType === 'SAT-OUT')     cardTitle.textContent = 'Saturday Sign-Out';
+    else if (eventType === 'SAT-IN') cardTitle.textContent = 'Saturday Sign-In';
+    else                             cardTitle.textContent = 'Student Sign-In';
+}
+
+function showClosed(title, msg) {
+    form.style.display = 'none';
+    closedScreen.classList.add('show');
+    closedTitle.textContent = title;
+    closedMsg.textContent   = msg;
+}
+
+// ════════════════════════════════════════════════════════════
+//  ONLINE TOGGLE
+// ════════════════════════════════════════════════════════════
+onlineToggle.addEventListener('change', function() {
+    isOnline = this.checked;
+    onlineCodeWrap.classList.toggle('show', isOnline);
+    locPill.style.display = isOnline ? 'none' : '';
+    updateSubmitState();
+});
+
+// ════════════════════════════════════════════════════════════
+//  GEOLOCATION
+// ════════════════════════════════════════════════════════════
+function calcDistance(lat1, lon1, lat2, lon2) {
+    const R    = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a    = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                 Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getLocation() {
+    if (!navigator.geolocation) {
+        locPill.textContent = 'Not supported';
+        locPill.className   = 'loc-pill err';
+        return;
+    }
+
+    function onSuccess(pos) {
+        userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        const dist   = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist <= MAX_DISTANCE_M) {
+            locPill.textContent = 'On campus';
+            locPill.className   = 'loc-pill ok';
+        } else {
+            locPill.textContent = (dist / 1000).toFixed(2) + 'km away';
+            locPill.className   = 'loc-pill err';
+        }
+        updateSubmitState();
+    }
+
+    function onError(err) {
+        if (err.code === 1) {
+            // Permission denied
+            locPill.textContent = 'Location denied';
+            locPill.className   = 'loc-pill err';
+        } else if (err.code === 3) {
+            // Timeout — try once more with high accuracy
+            locPill.textContent = 'Retrying…';
+            navigator.geolocation.getCurrentPosition(onSuccess, function() {
+                locPill.textContent = 'Location unavailable';
+                locPill.className   = 'loc-pill err';
+            }, { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
+        } else {
+            locPill.textContent = 'Location unavailable';
+            locPill.className   = 'loc-pill err';
+        }
+    }
+
+    // First attempt — fast, cached position acceptable
+    navigator.geolocation.getCurrentPosition(
+        onSuccess,
+        onError,
+        { timeout: 8000, enableHighAccuracy: true, maximumAge: 60000 }
+    );
+}
+
+// ════════════════════════════════════════════════════════════
+//  LIVE PREVIEW + VALIDATION
+// ════════════════════════════════════════════════════════════
+function updatePreview() {
+    const ys   = yearStreamInput.value;
+    const sn   = serialInput.value;
+    const ysOk = isValidYS(ys);
+    const snOk = isValidSN(sn);
+
+    yearStreamDisplay.textContent = ys ? ys.padEnd(4, '_') : '____';
+    yearStreamDisplay.className   = ysOk ? 'filled' : 'ph';
+    serialDisplay.textContent     = sn ? sn.padEnd(3, '_') : '___';
+    serialDisplay.className       = snOk ? 'filled' : 'ph';
+
+    updateSubmitState();
+}
+
+function updateSubmitState() {
+    const ysOk     = isValidYS(yearStreamInput.value);
+    const snOk     = isValidSN(serialInput.value);
+    const codeOk   = !isOnline || onlineCodeInput.value.trim().length >= 4;
+    const locOk    = isOnline  || (userLocation !== null);
+    document.getElementById('confirmBtn').disabled = !(ysOk && snOk && codeOk && locOk);
+}
+
+function isValidYS(v) {
+    if (!/^\d{4}$/.test(v)) return false;
+    if (parseInt(v.slice(0, 2)) < 20) return false;
+    if (!['01', '02', '03'].includes(v.slice(2))) return false;
+    return true;
+}
+
+function isValidSN(v) {
+    return /^\d{3}$/.test(v) && parseInt(v) >= 1;
+}
+
+function showErr(input, el, msg) {
+    input.classList.add('invalid');
+    el.textContent = msg;
+    el.classList.add('show');
+    return false;
+}
+
+function clearErr(input, el) {
+    input.classList.remove('invalid');
+    el.classList.remove('show');
+}
+
+function validateYearStream() {
+    const v = yearStreamInput.value;
+    clearErr(yearStreamInput, yearStreamError);
+    if (!v) return true;
+    if (!/^\d{4}$/.test(v))                         return showErr(yearStreamInput, yearStreamError, 'Must be exactly 4 digits');
+    if (parseInt(v.slice(0, 2)) < 20)               return showErr(yearStreamInput, yearStreamError, 'Year must be 20–99');
+    if (!['01','02','03'].includes(v.slice(2)))      return showErr(yearStreamInput, yearStreamError, 'Stream must be 01, 02, or 03');
+    return true;
+}
+
+function validateSerial() {
+    const v = serialInput.value;
+    clearErr(serialInput, serialError);
+    if (!v) return true;
+    if (!/^\d{3}$/.test(v)) return showErr(serialInput, serialError, 'Must be exactly 3 digits');
+    if (parseInt(v) < 1)    return showErr(serialInput, serialError, 'Must be between 001 and 999');
+    return true;
+}
+
+yearStreamInput.addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, 4);
+    validateYearStream();
+    updatePreview();
+});
+
+serialInput.addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, 3);
+    validateSerial();
+    updatePreview();
+});
+
+onlineCodeInput.addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+    clearErr(onlineCodeInput, onlineCodeError);
+    updateSubmitState();
+});
+
+// ════════════════════════════════════════════════════════════
+//  SUBMIT
+// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+//  IDENTITY CARD DOM REFS
+// ════════════════════════════════════════════════════════════
+const confirmBtn     = document.getElementById('confirmBtn');
+const identityCard   = document.getElementById('identityCard');
+const identityWelcome = document.getElementById('identityWelcome');
+const identityAvatar  = document.getElementById('identityAvatar');
+const checkinBtn     = document.getElementById('checkinBtn');
+
+// Verified student data — stored after Stage 1 succeeds
+let verifiedStudent = null;
+
+// ════════════════════════════════════════════════════════════
+//  STATUS HELPER
+// ════════════════════════════════════════════════════════════
+function showStatus(type, msg) {
+    statusMessage.className     = type;
+    statusMessage.textContent   = msg;
+    statusMessage.style.display = 'block';
+    if (type === 'success') {
+        setTimeout(() => { statusMessage.style.display = 'none'; }, 6000);
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+//  RESET TO STAGE ONE — "Not me" button
+// ════════════════════════════════════════════════════════════
+function resetToStageOne() {
+    // Show inputs and confirm button again
+    document.querySelector('.field-grid').style.display = 'grid';
+    confirmBtn.style.display = 'flex';
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
+    // Hide identity card
+    identityCard.classList.remove('show');
+    verifiedStudent = null;
+    statusMessage.style.display = 'none';
+    // Focus serial for correction
+    serialInput.focus();
+    serialInput.select();
+}
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 1 — CONFIRM IDENTITY (form submit)
+// ════════════════════════════════════════════════════════════
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    if (!validateYearStream() || !validateSerial()) {
+        showStatus('error', 'Please fix the errors above before submitting.');
+        return;
+    }
+
+    // Physical location check at Stage 1
+    if (!isOnline) {
+        if (!userLocation) {
+            showStatus('error', 'Location not available yet — please allow location access and try again.');
+            return;
+        }
+        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
+        if (dist > MAX_DISTANCE_M) {
+            showStatus('error', 'You must be on campus to sign in. You are ' + (dist / 1000).toFixed(2) + 'km away.');
+            return;
+        }
+    }
+
+    // Online code check at Stage 1
+    if (isOnline && onlineCodeInput.value.trim().length < 4) {
+        showErr(onlineCodeInput, onlineCodeError, 'Please enter the attendance code');
+        return;
+    }
+
+    // Lock form and show loading
+    confirmBtn.disabled  = true;
+    confirmBtn.innerHTML = '<span style="font-size:14px">Verifying…</span>';
+    identityCard.classList.remove('show');
+    statusMessage.style.display = 'none';
+
+    try {
+        const url = SCRIPT_URL
+            + '?action=verify'
+            + '&class='      + encodeURIComponent(CLASS_NAME)
+            + '&year='       + encodeURIComponent(YEAR)
+            + '&stream='     + encodeURIComponent(STREAM)
+            + '&yearStream=' + encodeURIComponent(yearStreamInput.value)
+            + '&serial='     + encodeURIComponent(serialInput.value)
+            + '&cb='         + Date.now();
+
+        const response = await fetch(url);
+        const data     = await response.json();
+
+        if (data.status !== 'success') {
+            showStatus('error', data.message || 'Verification failed. Please try again.');
+            confirmBtn.disabled  = false;
+            confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+            return;
+        }
+
+        if (!data.found) {
+            showStatus('error', 'Registration number not found for this stream. Please check your number or contact admin.');
+            confirmBtn.disabled  = false;
+            confirmBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>`;
+            return;
+        }
+
+        // Found — hide inputs, show identity card
+        verifiedStudent = data;
+        const initials = (data.firstName.charAt(0) + data.lastName.charAt(0)).toUpperCase();
+        identityAvatar.textContent  = initials;
+        identityWelcome.textContent = 'Welcome, ' + data.firstName + ' ' + data.lastName + '!';
+        const _bl3 = document.getElementById('btnLabel');
+        if (_bl3) _bl3.textContent = currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now';
+        const _subA = document.getElementById('identitySubA');
+        const _subB = document.getElementById('identitySubB');
+        const _subTxt = currentEvent === 'SAT-OUT' ? 'Is this you? Confirm to proceed with Sign Out.' : 'Is this you? Confirm to proceed with Sign In.';
+        if (_subA) _subA.textContent = _subTxt;
+        if (_subB) _subB.textContent = _subTxt;
+        // Hide the input fields and confirm button
+        document.querySelector('.field-grid').style.display = 'none';
+        confirmBtn.style.display = 'none';
+        // Show identity card
+        identityCard.classList.add('show');
+
+    } catch(err) {
+        showStatus('error', 'Connection error — please check your internet and try again.');
+        confirmBtn.disabled  = false;
+        confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
+    }
+});
+
+// ════════════════════════════════════════════════════════════
+//  STAGE 2 — FINAL SIGN-IN (Sign In / Sign Out button)
+// ════════════════════════════════════════════════════════════
+checkinBtn.addEventListener('click', async function() {
+    if (!verifiedStudent) return;
+
+    checkinBtn.disabled  = true;
+    checkinBtn.innerHTML = '<span style="font-size:13px">Submitting…</span>';
+
+    try {
+        const url = SCRIPT_URL
+            + '?action=checkin'
+            + '&class='      + encodeURIComponent(CLASS_NAME)
+            + '&year='       + encodeURIComponent(YEAR)
+            + '&stream='     + encodeURIComponent(STREAM)
+            + '&yearStream=' + encodeURIComponent(yearStreamInput.value)
+            + '&serial='     + encodeURIComponent(serialInput.value)
+            + '&eventType='  + encodeURIComponent(currentEvent)
+            + '&mode='       + encodeURIComponent(isOnline ? 'ONLINE' : 'PHYSICAL')
+            + '&onlineCode=' + encodeURIComponent(isOnline ? onlineCodeInput.value.trim() : '')
+            + '&latitude='   + encodeURIComponent(isOnline ? '' : userLocation.latitude)
+            + '&longitude='  + encodeURIComponent(isOnline ? '' : userLocation.longitude)
+            + '&isTest='     + (isTestMode ? 'TRUE' : 'FALSE'); // <-- Ensure this is here
+
+        const response = await fetch(url);
+        const data     = await response.json();
+
+        if (data.status === 'success') {
+            const label = currentEvent === 'SAT-OUT' ? 'Checked out' : 'Checked in';
+            // Hide identity card and reset full form for next student
+            identityCard.classList.remove('show');
+            showStatus('success', label + ' successfully! Welcome, ' + verifiedStudent.firstName + '. God bless you.');
+            form.reset();
+            onlineCodeWrap.classList.remove('show');
+            onlineToggle.checked          = false;
+            isOnline                      = false;
+            yearStreamDisplay.textContent = '____';
+            yearStreamDisplay.className   = 'ph';
+            serialDisplay.textContent     = '___';
+            serialDisplay.className       = 'ph';
+            locPill.style.display         = '';
+            verifiedStudent               = null;
+            // Restore input fields and confirm button for next student
+            document.querySelector('.field-grid').style.display = 'grid';
+            confirmBtn.style.display  = 'flex';
+            confirmBtn.disabled       = true;
+            // Reset both buttons cleanly for next student
+            confirmBtn.disabled  = true;
+            confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
+            checkinBtn.disabled  = false;
+            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>' + (currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now') + '</span>';
+        } else {
+            // Error — show message, hide identity card, reset to Stage 1 so they can try again
+            identityCard.classList.remove('show');
+            verifiedStudent = null;
+            showStatus('error', data.message || 'Sign-in failed. Please try again.');
+            confirmBtn.disabled  = false;
+            confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
+            checkinBtn.disabled  = false;
+            checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>' + (currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now') + '</span>';
+        }
+
+    } catch(err) {
+        identityCard.classList.remove('show');
+        verifiedStudent = null;
+        showStatus('error', 'Connection error — please check your internet and try again.');
+        confirmBtn.disabled  = false;
+        confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
+        checkinBtn.disabled  = false;
+        checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>' + (currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now') + '</span>';
+    }
+});
+</script>
+</body>
+</html>
