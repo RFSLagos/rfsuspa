@@ -322,7 +322,7 @@ function handleOnlineToggle() {
     updateBtn();
 }
 
-// ── Location ──────────────────────────────────────────────────
+// ── Location Geo ──────────────────────────────────────────────────
 function startLocation() {
     if (!navigator.geolocation) { setLocPill('Not supported', 'err'); return; }
     navigator.geolocation.getCurrentPosition(
