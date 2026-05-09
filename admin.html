@@ -81,9 +81,10 @@ input:focus, select:focus { outline: none; }
    ────────────────────────────────────────────────────────── */
 .login-overlay {
     position: fixed; inset: 0; z-index: 200;
-    display: grid; grid-template-columns: 1fr 1fr;
+    display: none; grid-template-columns: 1fr 1fr;
     background: var(--bg);
 }
+.login-overlay.show { display: grid; }
 .login-brand {
     background: transparent;
     color: #fff;
@@ -2038,6 +2039,8 @@ function getStoredPass() {
 window.addEventListener('DOMContentLoaded', function() {
     if (loadAdmin()) {
         showApp();
+    } else {
+        document.getElementById('loginOverlay').classList.add('show');
     }
     updateTopicList();
 
@@ -2089,7 +2092,7 @@ function showLoginErr(msg) {
 }
 
 function showApp() {
-    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('loginOverlay').classList.remove('show');
     document.getElementById('app').classList.add('show');
 
     // Avatar initials
@@ -2116,7 +2119,7 @@ function handleLogout() {
     sessionData = null;
     testModeOn  = false;
     document.getElementById('app').classList.remove('show');
-    document.getElementById('loginOverlay').style.display = 'grid';
+    document.getElementById('loginOverlay').classList.add('show');
     document.getElementById('loginName').value = '';
     document.getElementById('loginPassword').value = '';
     document.getElementById('loginErr').classList.remove('show');
