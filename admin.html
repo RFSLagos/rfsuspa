@@ -1288,7 +1288,7 @@ input:focus, select:focus { outline: none; }
         <!-- SIDEBAR -->
         <nav class="side">
             <div class="side-header">
-                <div class="side-header-eyebrow">RFS Suite</div>
+                <div class="side-header-eyebrow">RFS SUITE</div>
                 <div class="side-header-title">USpA Admin v1.0</div>
             </div>
 
@@ -1653,7 +1653,8 @@ input:focus, select:focus { outline: none; }
                                     <label>Type</label>
                                     <select id="setupType" class="input">
                                         <option value="TEST">TEST</option>
-                                        <option value="EXAM">EXAM</option>
+                                        <option value="MID-MCQ">MID-COURSE TEST</option>
+                                        <option value="EXAM-MCQ">EXAM</option>
                                     </select>
                                 </div>
                             </div>
@@ -1999,7 +2000,6 @@ const EXAM_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwty4Y7sigqznjw
 // Live Activity Log poll interval (ms)
 const LOG_POLL_MS = 60000;
 
-    
 // ============================================================
 //  STATE
 // ============================================================
@@ -3016,21 +3016,25 @@ function renderReport(data) {
     const rows = results.map(function(r) {
         const eligBadge = '<span class="rpt-badge ' + r.eligibility.replace(/\s/g,'-') + '">' + escHtml(r.eligibility) + '</span>';
         const statBadge = '<span class="rpt-badge ' + r.finalStatus + '">' + escHtml(r.finalStatus) + '</span>';
+        var midCombined  = ((r.midWritten  || 0) * 0.20 + (r.midMCQ   || 0) * 0.80).toFixed(1);
+        var examCombined = ((r.examWritten || 0) * 0.30 + (r.examMCQ  || 0) * 0.70).toFixed(1);
         return '<tr>'
             + '<td style="font-family:JetBrains Mono, monospace;font-size:11px;">' + escHtml(r.reg) + '</td>'
             + '<td>' + escHtml(r.lastName + ' ' + r.firstName) + '</td>'
-            + '<td>' + r.attPts + '</td>'
-            + '<td>' + r.attPct + '%</td>'
+            + '<td>' + (r.attPts || 0) + '</td>'
+            + '<td>' + (r.attPct || 0) + '%</td>'
             + '<td>' + eligBadge + '</td>'
-            + '<td>' + r.testAvg.toFixed(1) + '</td>'
-            + '<td>' + r.examScore + '</td>'
-            + '<td>' + r.grandTotal.toFixed(1) + '</td>'
+            + '<td>' + (r.testAvg || 0).toFixed(1) + '</td>'
+            + '<td>' + (r.projectScore || 0) + '</td>'
+            + '<td>' + midCombined + '</td>'
+            + '<td>' + examCombined + '</td>'
+            + '<td>' + (r.grandTotal || 0).toFixed(1) + '</td>'
             + '<td>' + statBadge + '</td>'
             + '</tr>';
     }).join('');
     wrap.innerHTML = '<div class="rpt-table-wrap"><table class="rpt-table">'
         + '<thead><tr><th>Reg No.</th><th>Name</th><th>Attended</th><th>Att %</th>'
-        + '<th>Eligibility</th><th>Test Avg</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>'
+        + '<th>Eligibility</th><th>Test Avg</th><th>Project</th><th>Mid-course</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>'
         + '<tbody>' + rows + '</tbody></table></div>'
         + '<div style="margin-top:12px; text-align:right;">'
         + '<button class="btn btn-outline btn-sm" onclick="downloadReport()">Download CSV</button>'
@@ -3041,16 +3045,19 @@ function downloadReport() {
     if (!reportData || !reportData.length) return;
     const TEST_TOPICS_SHORT = TEST_TOPICS.map(function(t) { return t.split(' ').map(function(w){return w[0];}).join('').substring(0,6); });
     const headers = ['Reg Number','Last Name','First Name','Attended','Excused','Att%','Eligibility',
-        ...TEST_TOPICS_SHORT,'Test Avg','AS1','AS2','AS3','Assign Marks',
-        'Exam Score','Att Marks','Exam Marks','Test Marks','Grand Total','Final Status'];
+        ...TEST_TOPICS_SHORT,'Test Avg',
+        'Project','Mid Written','Mid MCQ','Mid Marks(30)',
+        'Exam Written','Exam MCQ','Exam Marks(50)',
+        'Test Marks(10)','Project Marks(10)','Grand Total','Final Status'];
     const rows = reportData.map(function(r) {
         return [
             r.reg, r.lastName, r.firstName, r.attPts, r.excused, r.attPct, r.eligibility,
-            ...(r.testScores || [0,0,0,0,0,0,0,0,0]),
-            r.testAvg,
-            ...(r.assignScores || [0,0,0]),
-            r.assignMarks,
-            r.examScore, r.attMarks, r.examMarks, r.testMarks, r.grandTotal, r.finalStatus
+            ...(r.testScores || new Array(10).fill(0)),
+            r.testAvg || 0,
+            r.projectScore || 0,
+            r.midWritten || 0, r.midMCQ || 0, r.midMarks || 0,
+            r.examWritten || 0, r.examMCQ || 0, r.examMarks || 0,
+            r.testMarks || 0, r.projectMarks || 0, r.grandTotal || 0, r.finalStatus
         ].join(',');
     });
     const csv  = [headers.join(','), ...rows].join('\n');
