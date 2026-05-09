@@ -1460,7 +1460,7 @@ input:focus, select:focus { outline: none; }
                 <div class="page-head">
                     <div class="page-head-text">
                         <h1 class="page-title">Saturday Class</h1>
-                        <p class="page-sub">Manually open and close check-in / check-out windows.</p>
+                        <p class="page-sub">Manually open and close Sign-In / Sign-Out windows.</p>
                     </div>
                 </div>
 
@@ -1475,8 +1475,8 @@ input:focus, select:focus { outline: none; }
                     <div class="card-body">
                         <div class="status-row" id="satStatus">Load a session to see Saturday status</div>
                         <div class="btn-row">
-                            <button class="btn btn-primary btn-sm" id="btnSatCI" onclick="setSatMode('CHECKIN-OPEN')" disabled>Open Check-In</button>
-                            <button class="btn btn-amber btn-sm" id="btnSatCO" onclick="setSatMode('CHECKOUT-OPEN')" disabled>Open Check-Out</button>
+                            <button class="btn btn-primary btn-sm" id="btnSatCI" onclick="setSatMode('CHECKIN-OPEN')" disabled>Open Sign-In</button>
+                            <button class="btn btn-amber btn-sm" id="btnSatCO" onclick="setSatMode('CHECKOUT-OPEN')" disabled>Open Sign-Out</button>
                             <button class="btn btn-danger btn-sm" id="btnSatClose" onclick="setSatMode('CLOSED')" disabled>Close</button>
                         </div>
                     </div>
@@ -1492,11 +1492,11 @@ input:focus, select:focus { outline: none; }
                     <div class="card-body">
                         <div class="code-grid" style="margin-bottom:14px;">
                             <div class="code-field" style="margin-bottom:0;">
-                                <label for="satCICode">Check-in Code</label>
+                                <label for="satCICode">Sign-In Code</label>
                                 <input type="text" id="satCICode" class="input mono" placeholder="0000" style="text-transform:uppercase;">
                             </div>
                             <div class="code-field" style="margin-bottom:0;">
-                                <label for="satCOCode">Check-out Code</label>
+                                <label for="satCOCode">Sign-Out Code</label>
                                 <input type="text" id="satCOCode" class="input mono" placeholder="0000" style="text-transform:uppercase;">
                             </div>
                         </div>
@@ -1971,7 +1971,7 @@ input:focus, select:focus { outline: none; }
                 <div class="qaqc-check-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                The attendance window has been closed and all check-ins are finalised.
+                The attendance window has been closed and all Sign-Ins are finalised.
             </div>
         </div>
         <div class="qaqc-actions">
@@ -2335,7 +2335,7 @@ function updateSundayUI(data) {
         btnO.disabled = true; btnC.disabled = false;
     } else if (data.sunOpen) {
         // Time window is active — but NOT force-opened by admin
-        // Still show as open for student check-in, but let admin
+        // Still show as open for student Sign-In, but let admin
         // know it's the scheduled window, not admin action
         pill.textContent = 'Scheduled'; pill.className = 'pill pill-open';
         status.textContent = 'Scheduled window is active. Use “Open Window” to keep it open beyond the window.';
@@ -2398,10 +2398,10 @@ function updateSaturdayUI(data) {
 
     switch(data.satMode) {
         case 'CHECKIN-OPEN':
-            pill.textContent = 'Check-In Open'; pill.className = 'pill pill-open';
+            pill.textContent = 'Sign-In Open'; pill.className = 'pill pill-open';
             status.textContent = 'Students can check in now.'; btnCI.disabled = true; break;
         case 'CHECKOUT-OPEN':
-            pill.textContent = 'Check-Out Open'; pill.className = 'pill pill-checkout';
+            pill.textContent = 'Sign-Out Open'; pill.className = 'pill pill-checkout';
             status.textContent = 'Students can check out now.'; btnCO.disabled = true; break;
         default:
             pill.textContent = 'Closed'; pill.className = 'pill pill-closed';
@@ -2419,8 +2419,8 @@ async function setSatMode(mode) {
     const ci = document.getElementById('satCICode').value.trim();
     const co = document.getElementById('satCOCode').value.trim();
     const msgs = {
-        'CHECKIN-OPEN':  ['Opening check-in window…',  'Check-in is now open'],
-        'CHECKOUT-OPEN': ['Opening check-out window…', 'Check-out is now open'],
+        'CHECKIN-OPEN':  ['Opening Sign-In window…',  'Sign-In is now open'],
+        'CHECKOUT-OPEN': ['Opening Sign-Out window…', 'Sign-Out is now open'],
         'CLOSED':        ['Closing window…',           'Saturday window closed']
     };
     const [loading, success] = msgs[mode] || ['Updating…', 'Updated'];
