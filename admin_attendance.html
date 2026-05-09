@@ -174,7 +174,7 @@
         <div class="session-badge loading" id="sessionBadge">Loading session…</div>
     </div>
 
-    <!-- Check-in screen -->
+    <!-- Sign-In screen -->
     <div class="screen active" id="screenCheckin">
         <div class="card-body">
             <div class="field">
@@ -419,7 +419,7 @@ async function handleCheckin() {
             document.getElementById('detailTime').textContent    = now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
             showScreen('screenSuccess');
         } else {
-            statusEl.textContent = data.message || 'Check-in failed. Please try again.';
+            statusEl.textContent = data.message || 'Sign-In failed. Please try again.';
             statusEl.className   = 'status-msg error';
             btn.disabled = false; btn.textContent = 'Record Attendance';
         }
