@@ -423,11 +423,11 @@
             <div class="online-toggle-wrap">
                 <label class="online-check-row">
                     <input type="checkbox" id="onlineToggle" onchange="handleOnlineToggle()">
-                    <span class="online-check-label">I am taking the exam outside Lagos</span>
+                    <span class="online-check-label">I am Online</span>
                 </label>
                 <div class="online-code-field" id="onlineCodeField">
                     <label class="field" style="margin-bottom:0;">
-                        <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;">Online Attendance Code</span>
+                        <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;">Online Assessment Code</span>
                         <input type="text" id="onlineCodeInput" placeholder="Enter your online code" maxlength="10" autocomplete="off" oninput="this.value=this.value.toUpperCase();updateLoginBtn()">
                         <span style="font-size:11px;color:var(--text-3);margin-top:3px;">Enter your online code</span>
                     </label>
@@ -532,7 +532,7 @@
         <div style="font-size:40px; margin-bottom:16px;" id="confirmOverlayIcon">📋</div>
         <div style="font-size:17px; font-weight:700; color:#1A2010; margin-bottom:8px;" id="confirmOverlayTitle">Have you submitted?</div>
         <div style="font-size:13px; color:#4A5540; line-height:1.6; margin-bottom:24px;" id="confirmOverlayText">
-            It looks like you navigated away from the form.<br><br>
+            Please Confirm.<br><br>
             If you have <strong>already submitted</strong>, tap <em>Yes, I'm Done</em> to end your session.<br><br>
             If you <strong>haven't submitted yet</strong>, tap <em>Go Back</em> to return to the form.
         </div>
@@ -1194,7 +1194,7 @@ function showConfirmOverlay() {
     document.getElementById('confirmOverlayTitle').textContent = 'Have you submitted your ' + typeWord + '?';
     document.getElementById('confirmOverlayIcon').textContent  = isExamType ? '📝' : '📋';
     document.getElementById('confirmOverlayText').innerHTML    =
-        'It looks like you navigated away from the form.<br><br>'
+        'Please Confirm.<br><br>'
         + 'If you have <strong>already submitted</strong>, tap <em>Yes, I Am Done</em> to end your session.<br><br>'
         + 'If you have <strong>not submitted yet</strong>, tap <em>Go Back</em> to return to the form.';
     document.getElementById('confirmOverlay').style.display = 'flex';
