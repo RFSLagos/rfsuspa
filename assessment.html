@@ -407,10 +407,6 @@
                 <span class="hint">Format: RFS/2601/053</span>
                 <span class="err-text" id="regErr"></span>
             </div>
-            <div class="field">
-                <label>Access Code</label>
-
-            </div>
             <!-- Location status — only shown for physical students -->
             <div id="locRow" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-surface); border-radius:var(--r-sm); padding:10px 14px; margin-bottom:14px;">
                 <span style="font-size:12px; color:var(--text-3); font-weight:500;">Your location</span>
@@ -603,6 +599,7 @@ regInput.addEventListener('input', function() {
     clearErr(regInput, regErr);
     updateLoginBtn();
 });
+
 regInput.addEventListener('keydown',  e => { if (e.key === 'Enter') handleLogin(); });
 
 function updateLoginBtn() {
@@ -929,7 +926,6 @@ async function handleLogin() {
             + '?action=verify_assessment'
             + '&token='    + encodeURIComponent(SCRIPT_TOKEN)
             + '&reg='      + encodeURIComponent(reg)
-            + '&code='     + encodeURIComponent(code)
             + '&isOnline=' + (isOnline ? 'true' : 'false')
             + '&lat='      + (userLocation ? userLocation.latitude  : '')
             + '&lng='      + (userLocation ? userLocation.longitude : '')
@@ -960,7 +956,7 @@ async function handleLogin() {
         showInstructions(data);
 
     } catch(err) {
-        loginStatus.textContent = 'Connection error — please check your internet and try again.';
+        loginStatus.textContent = 'Error: ' + err.message;
         loginStatus.className   = 'status-msg error';
         resetBtn();
     }
