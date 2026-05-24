@@ -956,7 +956,7 @@ async function handleLogin() {
         showInstructions(data);
 
     } catch(err) {
-        loginStatus.textContent = 'Error: ' + err.message;
+        loginStatus.textContent = 'Connection error — please check your internet and try again.';
         loginStatus.className   = 'status-msg error';
         resetBtn();
     }
