@@ -81,10 +81,9 @@ input:focus, select:focus { outline: none; }
    ────────────────────────────────────────────────────────── */
 .login-overlay {
     position: fixed; inset: 0; z-index: 200;
-    display: none; grid-template-columns: 1fr 1fr;
+    display: grid; grid-template-columns: 1fr 1fr;
     background: var(--bg);
 }
-.login-overlay.show { display: grid; }
 .login-brand {
     background: transparent;
     color: #fff;
@@ -952,6 +951,35 @@ input:focus, select:focus { outline: none; }
 .assess-tab-panel { display: none; }
 .assess-tab-panel.show { display: block; }
 
+/* ── Grouping button in attendance ── */
+.att-head-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.att-head-row .btn { flex-shrink: 0; }
+
+/* ── My Group panel (mobile-first) ── */
+.my-group-panel { display: none; }
+.my-group-panel.show { display: block; }
+.student-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.student-row:last-child { border-bottom: none; }
+.student-info { flex: 1; min-width: 0; }
+.student-name { font-size: 14px; font-weight: 600; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.student-phone { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.student-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.s-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; letter-spacing: .04em; }
+.s-badge.yes  { background: var(--green-wash); color: var(--green-deep); }
+.s-badge.no   { background: var(--surface); color: var(--ink-3); }
+.student-edit-btn { flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: var(--r-sm); border: 1px solid var(--line-soft); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.student-edit-btn:active { opacity: .7; }
+
+/* ── Summary card ── */
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); border-bottom: 2px solid var(--line-soft); }
+.summary-table td { padding: 10px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink-1); }
+.summary-table tr:last-child td { border-bottom: none; font-weight: 700; color: var(--green-deep); background: var(--green-wash); }
+.summary-num { font-weight: 700; color: var(--green-deep); }
+
 .group-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
     margin-bottom: 18px;
@@ -991,6 +1019,35 @@ input:focus, select:focus { outline: none; }
 .assess-tab-panel { display: none; }
 .assess-tab-panel.show { display: block; }
 
+/* ── Grouping button in attendance ── */
+.att-head-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.att-head-row .btn { flex-shrink: 0; }
+
+/* ── My Group panel (mobile-first) ── */
+.my-group-panel { display: none; }
+.my-group-panel.show { display: block; }
+.student-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.student-row:last-child { border-bottom: none; }
+.student-info { flex: 1; min-width: 0; }
+.student-name { font-size: 14px; font-weight: 600; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.student-phone { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.student-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.s-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; letter-spacing: .04em; }
+.s-badge.yes  { background: var(--green-wash); color: var(--green-deep); }
+.s-badge.no   { background: var(--surface); color: var(--ink-3); }
+.student-edit-btn { flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: var(--r-sm); border: 1px solid var(--line-soft); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.student-edit-btn:active { opacity: .7; }
+
+/* ── Summary card ── */
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); border-bottom: 2px solid var(--line-soft); }
+.summary-table td { padding: 10px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink-1); }
+.summary-table tr:last-child td { border-bottom: none; font-weight: 700; color: var(--green-deep); background: var(--green-wash); }
+.summary-num { font-weight: 700; color: var(--green-deep); }
+
 .group-grid { grid-template-columns: repeat(5, 1fr); } }
 .group-card {
     background: var(--surface); border: 1.5px solid var(--line-soft);
@@ -1019,8 +1076,8 @@ input:focus, select:focus { outline: none; }
     .mob-desktop-only { display: flex !important; }
     #pageScores .page-content-wrap,
     #pagePermissions .page-content-wrap,
-    #pageReport .page-content-wrap,
-    #pageGrouping .page-content-wrap { display: none; }
+    #pageReport .page-content-wrap { display: none; }
+    /* pageGrouping is accessible on mobile for regular admins */
 }
 
 /* ════════════════════════════════════════
@@ -1061,6 +1118,35 @@ input:focus, select:focus { outline: none; }
 .assess-tab-panel { display: none; }
 .assess-tab-panel.show { display: block; }
 
+/* ── Grouping button in attendance ── */
+.att-head-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.att-head-row .btn { flex-shrink: 0; }
+
+/* ── My Group panel (mobile-first) ── */
+.my-group-panel { display: none; }
+.my-group-panel.show { display: block; }
+.student-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.student-row:last-child { border-bottom: none; }
+.student-info { flex: 1; min-width: 0; }
+.student-name { font-size: 14px; font-weight: 600; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.student-phone { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.student-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.s-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; letter-spacing: .04em; }
+.s-badge.yes  { background: var(--green-wash); color: var(--green-deep); }
+.s-badge.no   { background: var(--surface); color: var(--ink-3); }
+.student-edit-btn { flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: var(--r-sm); border: 1px solid var(--line-soft); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.student-edit-btn:active { opacity: .7; }
+
+/* ── Summary card ── */
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); border-bottom: 2px solid var(--line-soft); }
+.summary-table td { padding: 10px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink-1); }
+.summary-table tr:last-child td { border-bottom: none; font-weight: 700; color: var(--green-deep); background: var(--green-wash); }
+.summary-num { font-weight: 700; color: var(--green-deep); }
+
 .group-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
     margin-bottom: 18px;
@@ -1099,6 +1185,35 @@ input:focus, select:focus { outline: none; }
 .assess-tab.active { color: var(--green-deep); border-bottom-color: var(--green-deep); }
 .assess-tab-panel { display: none; }
 .assess-tab-panel.show { display: block; }
+
+/* ── Grouping button in attendance ── */
+.att-head-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.att-head-row .btn { flex-shrink: 0; }
+
+/* ── My Group panel (mobile-first) ── */
+.my-group-panel { display: none; }
+.my-group-panel.show { display: block; }
+.student-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.student-row:last-child { border-bottom: none; }
+.student-info { flex: 1; min-width: 0; }
+.student-name { font-size: 14px; font-weight: 600; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.student-phone { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.student-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.s-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; letter-spacing: .04em; }
+.s-badge.yes  { background: var(--green-wash); color: var(--green-deep); }
+.s-badge.no   { background: var(--surface); color: var(--ink-3); }
+.student-edit-btn { flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: var(--r-sm); border: 1px solid var(--line-soft); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.student-edit-btn:active { opacity: .7; }
+
+/* ── Summary card ── */
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); border-bottom: 2px solid var(--line-soft); }
+.summary-table td { padding: 10px 10px; border-bottom: 1px solid var(--line-soft); color: var(--ink-1); }
+.summary-table tr:last-child td { border-bottom: none; font-weight: 700; color: var(--green-deep); background: var(--green-wash); }
+.summary-num { font-weight: 700; color: var(--green-deep); }
 
 .group-grid { grid-template-columns: repeat(5, 1fr); } }
 .group-card {
@@ -1310,7 +1425,7 @@ input:focus, select:focus { outline: none; }
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-1.5-1.5"/></svg>
                     Attendance
                 </button>
-                <button class="nav-item" data-page="grouping" id="navGrouping" onclick="switchPage('grouping', this)" style="display:none;">
+                <button class="nav-item" data-page="grouping" id="navGrouping" onclick="switchPage('grouping', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     Grouping
                 </button>
@@ -1366,6 +1481,19 @@ input:focus, select:focus { outline: none; }
                     </div>
                 </div>
 
+                <div class="card" id="dashSessionCard" style="margin-bottom:14px;">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Active Session</div>
+                            <div class="card-sub" id="dashSessionSub">Loading…</div>
+                        </div>
+                        <span class="pill pill-closed" id="dashSessionPill">Loading</span>
+                    </div>
+                    <div class="card-body" id="dashSessionBody" style="font-size:13px; color:var(--ink-3);">
+                        Looking up the active stream from configuration…
+                    </div>
+                </div>
+
                 <div class="stats">
                     <div class="stat physical">
                         <div class="stat-icon">
@@ -1398,19 +1526,6 @@ input:focus, select:focus { outline: none; }
                         </div>
                     </div>
                 </div>
-
-                <div class="card" id="dashSessionCard">
-                    <div class="card-head">
-                        <div class="card-head-text">
-                            <div class="card-title">Active Session</div>
-                            <div class="card-sub" id="dashSessionSub">Loading…</div>
-                        </div>
-                        <span class="pill pill-closed" id="dashSessionPill">Loading</span>
-                    </div>
-                    <div class="card-body" id="dashSessionBody" style="font-size:13px; color:var(--ink-3);">
-                        Looking up the active stream from configuration…
-                    </div>
-                </div>
             </section>
 
             <!-- ─── SUNDAY PAGE ─── -->
@@ -1435,6 +1550,20 @@ input:focus, select:focus { outline: none; }
                         <div class="btn-row">
                             <button class="btn btn-primary btn-sm" id="btnSunOpen" onclick="sunOpen()" disabled>Open Window</button>
                             <button class="btn btn-danger btn-sm" id="btnSunClose" onclick="sunClose()" disabled>Close Window</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Online Code Display -->
+                <div class="card" id="sunCurrentCodeCard" style="display:none; margin-bottom:14px;">
+                    <div class="card-body" style="padding:14px 16px;">
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin-bottom:6px;">Current Active Code</div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                            <span id="sunCurrentCodeDisplay" style="font-family:monospace; font-size:28px; font-weight:700; letter-spacing:.12em; color:var(--green-deep);"></span>
+                            <button class="btn btn-outline btn-sm" onclick="copySunCode()" id="btnCopySunCode" title="Copy code">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Copy
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1479,6 +1608,23 @@ input:focus, select:focus { outline: none; }
                             <button class="btn btn-primary btn-sm" id="btnSatCI" onclick="setSatMode('CHECKIN-OPEN')" disabled>Open Sign-In</button>
                             <button class="btn btn-amber btn-sm" id="btnSatCO" onclick="setSatMode('CHECKOUT-OPEN')" disabled>Open Sign-Out</button>
                             <button class="btn btn-danger btn-sm" id="btnSatClose" onclick="setSatMode('CLOSED')" disabled>Close</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Saturday Codes Display -->
+                <div class="card" id="satCurrentCodesCard" style="display:none; margin-bottom:14px;">
+                    <div class="card-body" style="padding:14px 16px;">
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin-bottom:10px;">Current Codes</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                            <div>
+                                <div style="font-size:11px; color:var(--ink-3); margin-bottom:4px;">Sign-In Code</div>
+                                <div id="satCurrentCIDisplay" style="font-family:monospace; font-size:22px; font-weight:700; letter-spacing:.1em; color:var(--green-deep);">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px; color:var(--ink-3); margin-bottom:4px;">Sign-Out Code</div>
+                                <div id="satCurrentCODisplay" style="font-family:monospace; font-size:22px; font-weight:700; letter-spacing:.1em; color:var(--green-deep);">—</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1654,8 +1800,7 @@ input:focus, select:focus { outline: none; }
                                     <label>Type</label>
                                     <select id="setupType" class="input">
                                         <option value="TEST">TEST</option>
-                                        <option value="MID-MCQ">MID-COURSE TEST</option>
-                                        <option value="EXAM-MCQ">EXAM</option>
+                                        <option value="EXAM">EXAM</option>
                                     </select>
                                 </div>
                             </div>
@@ -1705,11 +1850,8 @@ input:focus, select:focus { outline: none; }
                                 <label>Assessment Type</label>
                                 <select id="scoreType" class="input" onchange="updateTopicList()">
                                     <option value="TEST">Test</option>
-                                    <option value="PROJECT">Project</option>
-                                    <option value="MID-WRITTEN">Mid-course Written</option>
-                                    <option value="MID-MCQ">Mid-course MCQ</option>
-                                    <option value="EXAM-WRITTEN">Exam Written</option>
-                                    <option value="EXAM-MCQ">Exam MCQ</option>
+                                    <option value="ASSIGNMENT">Assignment</option>
+                                    <option value="EXAM">Exam</option>
                                 </select>
                             </div>
                             <div class="sel-field">
@@ -1854,10 +1996,10 @@ input:focus, select:focus { outline: none; }
             <section class="page" id="pageGrouping">
                 <div class="page-head">
                     <div class="page-head-text">
-                        <h1 class="page-title">Student Grouping</h1>
-                        <p class="page-sub">Assign active students to WhatsApp groups by last digit of their serial number.</p>
+                        <h1 class="page-title" id="groupingPageTitle">Student Grouping</h1>
+                        <p class="page-sub" id="groupingPageSub">Assign active students to WhatsApp groups by last digit of their serial number.</p>
                     </div>
-                    <div class="page-actions">
+                    <div class="page-actions" id="groupingPageActions">
                         <button class="btn btn-outline btn-sm" onclick="loadGroupConfig()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-.5-5"/></svg>
                             Refresh View
@@ -1870,7 +2012,25 @@ input:focus, select:focus { outline: none; }
                 </div>
 
                 <div class="page-content-wrap">
-                <div class="card" style="margin-bottom:14px;">
+
+                <!-- My Group Panel — regular admins, auto-loads on page open -->
+                <div class="card" id="myGroupPanel" style="display:none; margin-bottom:14px;">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title" id="myGroupTitle">My Group</div>
+                            <div class="card-sub" id="myGroupSub">Loading…</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="loadMyGroup()">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-.5-5"/></svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="card-body" id="myGroupList">
+                        <div class="att-empty">Loading your group…</div>
+                    </div>
+                </div>
+
+                <div class="card" id="groupGridCard" style="margin-bottom:14px;">
                     <div class="card-body">
                         <div class="field-label" style="margin-bottom:12px;">Groups</div>
                         <div class="group-grid" id="groupGrid">
@@ -1887,6 +2047,23 @@ input:focus, select:focus { outline: none; }
                         <div class="field-label" style="margin-bottom:12px;">Last Refresh Results</div>
                         <div id="groupResultList"></div>
                         <p style="margin-top:12px; font-size:12px; color:var(--ink-3);" id="groupResultTotal"></p>
+                    </div>
+                </div>
+
+                <!-- Summary Card — Super Admin only -->
+                <div class="card" id="groupSummaryCard" style="margin-top:14px;">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Grouping Summary</div>
+                            <div class="card-sub">Live from Grouping Sheet — Added, Bus, Bus Group per group</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="loadGroupingSummary()">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-.5-5"/></svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="card-body" id="groupSummaryBody">
+                        <div class="att-empty">Click Refresh to load summary.</div>
                     </div>
                 </div>
                 </div>
@@ -1940,9 +2117,9 @@ input:focus, select:focus { outline: none; }
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-1.5-1.5"/></svg>
             Attend.
         </button>
-        <button class="mob-nav-item" onclick="openRailSlide()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 2a10 10 0 0 0 0 20"/><path d="M2 12h20"/></svg>
-            Activity
+        <button class="mob-nav-item" data-page="grouping" onclick="switchPage('grouping', this); mobNavSwitch(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Groups
         </button>
     </nav>
 
@@ -2027,6 +2204,7 @@ function loadAdmin() {
 function clearAdmin() {
     sessionStorage.removeItem('rfs_admin');
     sessionStorage.removeItem('rfs_pass');
+    sessionStorage.removeItem('rfs_session_v2');
     admin = null;
 }
 function getStoredPass() {
@@ -2039,8 +2217,6 @@ function getStoredPass() {
 window.addEventListener('DOMContentLoaded', function() {
     if (loadAdmin()) {
         showApp();
-    } else {
-        document.getElementById('loginOverlay').classList.add('show');
     }
     updateTopicList();
 
@@ -2092,7 +2268,7 @@ function showLoginErr(msg) {
 }
 
 function showApp() {
-    document.getElementById('loginOverlay').classList.remove('show');
+    document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('app').classList.add('show');
 
     // Avatar initials
@@ -2104,7 +2280,8 @@ function showApp() {
     document.getElementById('testToggle').style.display = (admin.role === 'Super Admin') ? 'inline-flex' : 'none';
     // Grouping nav + mobile FAB (Super Admin only)
     const isSuper = admin.role === 'Super Admin';
-    document.getElementById('navGrouping').style.display    = isSuper ? 'flex'  : 'none';
+    document.getElementById('navGrouping').style.display    = 'flex'; // visible to all admins
+
 
 
     // Initial loads
@@ -2119,7 +2296,7 @@ function handleLogout() {
     sessionData = null;
     testModeOn  = false;
     document.getElementById('app').classList.remove('show');
-    document.getElementById('loginOverlay').classList.add('show');
+    document.getElementById('loginOverlay').style.display = 'grid';
     document.getElementById('loginName').value = '';
     document.getElementById('loginPassword').value = '';
     document.getElementById('loginErr').classList.remove('show');
@@ -2144,58 +2321,79 @@ function switchPage(name, btn) {
     // Lazy-load page data
     if (name === 'dashboard')   loadDashboard();
     if (name === 'attendance')  loadAttendance();
+    if (name === 'saturday')    { if (sessionData) updateSaturdayUI(sessionData); }
     if (name === 'scores')      updateTopicList();
     if (name === 'permissions') { updateExcuseForm(); loadExcuses(); }
-    if (name === 'grouping')     loadGroupConfig();
+    if (name === 'grouping') {
+        var isGroupingSuper = admin && admin.role === 'Super Admin';
+        var elActions = document.getElementById('groupingPageActions');
+        var elGrid    = document.getElementById('groupGridCard');
+        var elResult  = document.getElementById('groupResultCard');
+        var elSummary = document.getElementById('groupSummaryCard');
+        var elMyGroup = document.getElementById('myGroupPanel');
+        var elTitle = document.getElementById('groupingPageTitle');
+        var elSub   = document.getElementById('groupingPageSub');
+        if (isGroupingSuper) {
+            if (elTitle)   elTitle.textContent = 'Student Grouping';
+            if (elSub)     elSub.textContent   = 'Assign active students to WhatsApp groups by last digit of their serial number.';
+            if (elActions) elActions.style.display = '';
+            if (elGrid)    elGrid.style.display    = '';
+            if (elSummary) elSummary.style.display = '';
+            if (elMyGroup) elMyGroup.style.display = 'none';
+            loadGroupConfig();
+            loadGroupingSummary();
+        } else {
+            if (elTitle)   elTitle.textContent = 'My Group';
+            if (elSub)     elSub.textContent   = 'View and update your students — mark who has joined WhatsApp, follows the bus, and more.';
+            if (elActions) elActions.style.display = 'none';
+            if (elGrid)    elGrid.style.display    = 'none';
+            if (elResult)  elResult.style.display  = 'none';
+            if (elSummary) elSummary.style.display = 'none';
+            if (elMyGroup) elMyGroup.style.display = 'block';
+            loadMyGroup();
+        }
+    }
     if (name === 'scores')       { switchAssessTab('assessment'); loadAssessInfo(); }
 }
 
 // ============================================================
 //  ACTIVE SESSION — combines get_active_stream + get_status
 // ============================================================
-async function autoLoadSession() {
-    setSessionDisplay({ loading: true });
-
-    // Step 1: get the active stream from the unified script.
-    // Falls back to legacy get_active_session if the new endpoint is missing.
-    let streamInfo = null;
-    try {
-        // Try new unified endpoint first
-        let res  = await fetch(SCRIPT_URL + '?action=get_active_stream&cb=' + Date.now());
-        let data = await res.json();
-        if (data.status === 'success') {
-            streamInfo = { className: data.class || data.className, year: data.year, stream: data.stream };
-        } else {
-            // Fallback: legacy bundled endpoint
-            res  = await fetch(SCRIPT_URL + '?action=get_active_session&cb=' + Date.now());
-            data = await res.json();
-            if (data.status === 'success') {
-                streamInfo = { className: data.className, year: data.year, stream: data.stream };
-                // legacy returns everything in one shot, so we keep it
-                applySessionData(Object.assign({}, data));
+async function autoLoadSession(forceRefresh) {
+    // ── Try cache first (instant) ─────────────────────────────
+    const CACHE_KEY = 'rfs_session_v2';
+    const cached    = sessionStorage.getItem(CACHE_KEY);
+    if (cached && !forceRefresh) {
+        try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.className) {
+                applySessionData(parsed);
+                // Refresh in background silently — no loading spinner
+                fetchAndCacheSession(CACHE_KEY);
                 return;
             }
+        } catch(e) { /* ignore bad cache */ }
+    }
+    // ── No cache — show loading and fetch ─────────────────────
+    setSessionDisplay({ loading: true });
+    await fetchAndCacheSession(CACHE_KEY);
+}
+
+async function fetchAndCacheSession(cacheKey) {
+    const CACHE_KEY = cacheKey || 'rfs_session_v2';
+    try {
+        // Single call to get_active_session — returns everything in one shot
+        const res  = await fetch(SCRIPT_URL + '?action=get_active_session&cb=' + Date.now());
+        const data = await res.json();
+        if (data.status === 'success') {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+            applySessionData(data);
+        } else {
             setSessionDisplay({ error: data.message || 'No active session found.' });
-            return;
         }
     } catch(e) {
         setSessionDisplay({ error: 'Connection error — could not load session.' });
-        return;
     }
-
-    // Step 2: enrich with window/saturday status via get_status
-    let statusData = {};
-    try {
-        const url = SCRIPT_URL + '?action=get_status'
-            + '&class='  + encodeURIComponent(streamInfo.className)
-            + '&year='   + encodeURIComponent(streamInfo.year)
-            + '&stream=' + encodeURIComponent(streamInfo.stream)
-            + '&cb='     + Date.now();
-        const res  = await fetch(url);
-        statusData = await res.json();
-    } catch(e) { /* tolerate */ }
-
-    applySessionData(Object.assign({ status: 'success' }, streamInfo, statusData));
 }
 
 function applySessionData(data) {
@@ -2205,7 +2403,10 @@ function applySessionData(data) {
     document.getElementById('selStream').value = data.stream || '';
     setSessionDisplay({ data: data });
     updateSundayUI(data);
-    updateSaturdayUI(data);
+    // Saturday UI loaded lazily when Saturday page is opened
+    if (document.getElementById('pageSaturday').classList.contains('show')) {
+        updateSaturdayUI(data);
+    }
     updateTestModeUI(data.testMode);
     loadDashboard(); // refresh stats
 }
@@ -2313,6 +2514,18 @@ function exportDailyReport() {
 //  SUNDAY
 // ============================================================
 function updateSundayUI(data) {
+    // Show current online code if set
+    var codeCard = document.getElementById('sunCurrentCodeCard');
+    var codeDisp = document.getElementById('sunCurrentCodeDisplay');
+    if (codeCard && codeDisp) {
+        if (data.currentOnlineCode) {
+            codeDisp.textContent = data.currentOnlineCode;
+            codeCard.style.display = '';
+        } else {
+            codeCard.style.display = 'none';
+        }
+    }
+
     const pill   = document.getElementById('sunPill');
     const status = document.getElementById('sunStatus');
     const btnO   = document.getElementById('btnSunOpen');
@@ -2372,6 +2585,7 @@ async function adminSunday(mode, code, loadingMsg, successMsg) {
         const res = await fetch(url); const data = await res.json();
         if (data.status === 'success') {
             showToast(successMsg || data.message, 'ok');
+            sessionStorage.removeItem('rfs_session_v2'); // invalidate cache so new code shows on next load
             // Update UI directly — don't re-fetch which could bring back
             // stale sunOpen=true from time window on a non-Sunday
             if (mode === 'FORCE-OPEN') {
@@ -2391,6 +2605,22 @@ async function adminSunday(mode, code, loadingMsg, successMsg) {
 //  SATURDAY
 // ============================================================
 function updateSaturdayUI(data) {
+    // Show current Saturday codes if set
+    var satCodesCard = document.getElementById('satCurrentCodesCard');
+    var satCIDisp    = document.getElementById('satCurrentCIDisplay');
+    var satCODisp    = document.getElementById('satCurrentCODisplay');
+    if (satCodesCard) {
+        var ci = data.satCheckInCode  || '';
+        var co = data.satCheckOutCode || '';
+        if (ci || co) {
+            if (satCIDisp) satCIDisp.textContent = ci || '—';
+            if (satCODisp) satCODisp.textContent = co || '—';
+            satCodesCard.style.display = '';
+        } else {
+            satCodesCard.style.display = 'none';
+        }
+    }
+
     const pill   = document.getElementById('satPill');
     const status = document.getElementById('satStatus');
     const btnCI  = document.getElementById('btnSatCI');
@@ -3019,25 +3249,21 @@ function renderReport(data) {
     const rows = results.map(function(r) {
         const eligBadge = '<span class="rpt-badge ' + r.eligibility.replace(/\s/g,'-') + '">' + escHtml(r.eligibility) + '</span>';
         const statBadge = '<span class="rpt-badge ' + r.finalStatus + '">' + escHtml(r.finalStatus) + '</span>';
-        var midCombined  = ((r.midWritten  || 0) * 0.20 + (r.midMCQ   || 0) * 0.80).toFixed(1);
-        var examCombined = ((r.examWritten || 0) * 0.30 + (r.examMCQ  || 0) * 0.70).toFixed(1);
         return '<tr>'
             + '<td style="font-family:JetBrains Mono, monospace;font-size:11px;">' + escHtml(r.reg) + '</td>'
             + '<td>' + escHtml(r.lastName + ' ' + r.firstName) + '</td>'
-            + '<td>' + (r.attPts || 0) + '</td>'
-            + '<td>' + (r.attPct || 0) + '%</td>'
+            + '<td>' + r.attPts + '</td>'
+            + '<td>' + r.attPct + '%</td>'
             + '<td>' + eligBadge + '</td>'
-            + '<td>' + (r.testAvg || 0).toFixed(1) + '</td>'
-            + '<td>' + (r.projectScore || 0) + '</td>'
-            + '<td>' + midCombined + '</td>'
-            + '<td>' + examCombined + '</td>'
-            + '<td>' + (r.grandTotal || 0).toFixed(1) + '</td>'
+            + '<td>' + r.testAvg.toFixed(1) + '</td>'
+            + '<td>' + r.examScore + '</td>'
+            + '<td>' + r.grandTotal.toFixed(1) + '</td>'
             + '<td>' + statBadge + '</td>'
             + '</tr>';
     }).join('');
     wrap.innerHTML = '<div class="rpt-table-wrap"><table class="rpt-table">'
         + '<thead><tr><th>Reg No.</th><th>Name</th><th>Attended</th><th>Att %</th>'
-        + '<th>Eligibility</th><th>Test Avg</th><th>Project</th><th>Mid-course</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>'
+        + '<th>Eligibility</th><th>Test Avg</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>'
         + '<tbody>' + rows + '</tbody></table></div>'
         + '<div style="margin-top:12px; text-align:right;">'
         + '<button class="btn btn-outline btn-sm" onclick="downloadReport()">Download CSV</button>'
@@ -3048,19 +3274,16 @@ function downloadReport() {
     if (!reportData || !reportData.length) return;
     const TEST_TOPICS_SHORT = TEST_TOPICS.map(function(t) { return t.split(' ').map(function(w){return w[0];}).join('').substring(0,6); });
     const headers = ['Reg Number','Last Name','First Name','Attended','Excused','Att%','Eligibility',
-        ...TEST_TOPICS_SHORT,'Test Avg',
-        'Project','Mid Written','Mid MCQ','Mid Marks(30)',
-        'Exam Written','Exam MCQ','Exam Marks(50)',
-        'Test Marks(10)','Project Marks(10)','Grand Total','Final Status'];
+        ...TEST_TOPICS_SHORT,'Test Avg','AS1','AS2','AS3','Assign Marks',
+        'Exam Score','Att Marks','Exam Marks','Test Marks','Grand Total','Final Status'];
     const rows = reportData.map(function(r) {
         return [
             r.reg, r.lastName, r.firstName, r.attPts, r.excused, r.attPct, r.eligibility,
-            ...(r.testScores || new Array(10).fill(0)),
-            r.testAvg || 0,
-            r.projectScore || 0,
-            r.midWritten || 0, r.midMCQ || 0, r.midMarks || 0,
-            r.examWritten || 0, r.examMCQ || 0, r.examMarks || 0,
-            r.testMarks || 0, r.projectMarks || 0, r.grandTotal || 0, r.finalStatus
+            ...(r.testScores || [0,0,0,0,0,0,0,0,0]),
+            r.testAvg,
+            ...(r.assignScores || [0,0,0]),
+            r.assignMarks,
+            r.examScore, r.attMarks, r.examMarks, r.testMarks, r.grandTotal, r.finalStatus
         ].join(',');
     });
     const csv  = [headers.join(','), ...rows].join('\n');
@@ -3402,6 +3625,205 @@ async function resetStudentCode(reg) {
     }
 }
 
+function copySunCode() {
+    var code = document.getElementById('sunCurrentCodeDisplay').textContent;
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(function() {
+        var btn = document.getElementById('btnCopySunCode');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy'; }, 2000);
+    });
+}
+
+// ============================================================
+//  MY GROUP MODULE — all admins, mobile-first
+// ============================================================
+let myGroupCache = { students: [], tabName: '' };
+let myGroupVisible = false;
+
+function toggleMyGroupPanel() {
+    // No longer used — My Group panel auto-loads via grouping page
+}
+
+async function loadMyGroup() {
+    const list = document.getElementById('myGroupList');
+    const sub  = document.getElementById('myGroupSub');
+    const title = document.getElementById('myGroupTitle');
+    if (!list) return;
+    list.innerHTML = '<div class="att-empty">Loading…</div>';
+    try {
+        const url = SCRIPT_URL + '?action=get_my_group'
+            + '&token='     + encodeURIComponent(SCRIPT_TOKEN)
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'success') {
+            list.innerHTML = '<div class="att-empty" style="color:var(--red-mid);">' + safeHtml(data.message || 'Failed to load group.') + '</div>';
+            return;
+        }
+        myGroupCache = { students: data.students || [], tabName: data.tabName || '' };
+        title.textContent = data.tabName || 'My Group';
+        sub.textContent   = data.total + ' student' + (data.total === 1 ? '' : 's');
+        renderMyGroup(myGroupCache.students);
+    } catch(e) {
+        list.innerHTML = '<div class="att-empty" style="color:var(--red-mid);">Connection error. Try again.</div>';
+    }
+}
+
+function renderMyGroup(students) {
+    const list = document.getElementById('myGroupList');
+    if (!students || !students.length) {
+        list.innerHTML = '<div class="att-empty">No students in your group yet. Run Update Groups first.</div>';
+        return;
+    }
+    list.innerHTML = students.map(function(s, idx) {
+        var addedBadge   = s.added    === 'Yes' ? '<span class="s-badge yes">Added</span>'   : '<span class="s-badge no">Not Added</span>';
+        var busBadge     = s.followBus === 'Yes' ? '<span class="s-badge yes">Bus</span>'     : '';
+        var busgBadge    = s.addedBus === 'Yes'  ? '<span class="s-badge yes">Bus Group</span>' : '';
+        return '<div class="student-row">'
+            + '<div class="student-info">'
+            + '<div class="student-name">' + safeHtml(s.firstName + ' ' + s.lastName) + '</div>'
+            + '<div class="student-phone">' + safeHtml(s.phone || s.reg) + '</div>'
+            + '<div class="student-badges">' + addedBadge + busBadge + busgBadge + '</div>'
+            + '</div>'
+            + '<button class="student-edit-btn" onclick="openStudentEdit(' + idx + ')">Edit</button>'
+            + '</div>';
+    }).join('');
+}
+
+function openStudentEdit(idx) {
+    const s = myGroupCache.students[idx];
+    if (!s) return;
+    document.getElementById('editStudentIdx').value      = idx;
+    document.getElementById('editStudentName').textContent = s.firstName + ' ' + s.lastName;
+    document.getElementById('editStudentReg').textContent  = s.reg;
+    document.getElementById('editAdded').value    = s.added    || '';
+    document.getElementById('editComment').value  = s.comment  || '';
+    document.getElementById('editFollowBus').value = s.followBus || '';
+    document.getElementById('editBusLoc').value   = s.busLoc   || '';
+    document.getElementById('editAddedBus').value = s.addedBus || '';
+    document.getElementById('studentEditOverlay').classList.add('show');
+}
+
+function closeStudentEdit() {
+    document.getElementById('studentEditOverlay').classList.remove('show');
+}
+
+async function saveStudentEdit() {
+    const idx  = parseInt(document.getElementById('editStudentIdx').value, 10);
+    const s    = myGroupCache.students[idx];
+    if (!s) return;
+    const btn  = document.getElementById('saveStudentEditBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const added     = document.getElementById('editAdded').value;
+    const comment   = document.getElementById('editComment').value.trim();
+    const followBus = document.getElementById('editFollowBus').value;
+    const busLoc    = document.getElementById('editBusLoc').value.trim();
+    const addedBus  = document.getElementById('editAddedBus').value;
+    try {
+        const url = SCRIPT_URL + '?action=update_student_grouping'
+            + '&token='       + encodeURIComponent(SCRIPT_TOKEN)
+            + '&adminName='   + encodeURIComponent(admin.name)
+            + '&password='    + encodeURIComponent(getStoredPass())
+            + '&tabName='     + encodeURIComponent(myGroupCache.tabName)
+            + '&rowIndex='    + encodeURIComponent(s.rowIndex)
+            + '&studentName=' + encodeURIComponent(s.firstName + ' ' + s.lastName)
+            + '&added='       + encodeURIComponent(added)
+            + '&comment='     + encodeURIComponent(comment)
+            + '&followBus='   + encodeURIComponent(followBus)
+            + '&busLoc='      + encodeURIComponent(busLoc)
+            + '&addedBus='    + encodeURIComponent(addedBus)
+            + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status === 'success') {
+            // Update cache
+            s.added = added; s.comment = comment; s.followBus = followBus;
+            s.busLoc = busLoc; s.addedBus = addedBus;
+            showToast('Updated.', 'ok');
+            closeStudentEdit();
+            renderMyGroup(myGroupCache.students);
+        } else {
+            showToast(data.message || 'Update failed.', 'err');
+        }
+    } catch(e) {
+        showToast('Connection error. Try again.', 'err');
+    }
+    btn.disabled = false; btn.textContent = 'Save';
+}
+
+// ── Grouping Summary (Super Admin) ────────────────────────────
+async function loadGroupingSummary() {
+    const body = document.getElementById('groupSummaryBody');
+    if (!body) return;
+    body.innerHTML = '<div class="att-empty">Loading…</div>';
+    try {
+        const url = SCRIPT_URL + '?action=get_grouping_summary'
+            + '&token='     + encodeURIComponent(SCRIPT_TOKEN)
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&cb=' + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'success') {
+            body.innerHTML = '<div class="att-empty" style="color:var(--red-mid);">' + safeHtml(data.message || 'Failed.') + '</div>';
+            return;
+        }
+        var isMob = window.innerWidth < 890;
+        var html  = '';
+        if (isMob) {
+            // ── Mobile: compact list ──────────────────────────
+            var t2 = data.totals || {};
+            html = '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); display:grid; grid-template-columns:1fr 48px 48px 48px 48px; gap:0; padding:0 4px 8px 4px; border-bottom:2px solid var(--line-soft); margin-bottom:4px;">'
+                + '<span>Group</span><span style="text-align:center;">Total</span><span style="text-align:center;">Added</span><span style="text-align:center;">Bus</span><span style="text-align:center;">B.Grp</span>'
+                + '</div>';
+            (data.summary || []).forEach(function(g, i) {
+                var allAdded = g.total > 0 && g.added === g.total;
+                var bg = i % 2 === 0 ? '' : 'background:var(--surface);';
+                html += '<div style="display:grid; grid-template-columns:1fr 48px 48px 48px 48px; gap:0; padding:10px 4px; border-bottom:1px solid var(--line-soft); align-items:center; ' + bg + '">'
+                    + '<div>'
+                    + '<span style="font-weight:700; font-size:13px; color:var(--ink-1);">Group ' + g.group + '</span>'
+                    + '<span style="font-size:11px; color:var(--ink-3); margin-left:6px;">' + safeHtml(g.admin) + '</span>'
+                    + '</div>'
+                    + '<div style="text-align:center; font-weight:700; font-size:14px; color:var(--green-deep);">' + g.total + '</div>'
+                    + '<div style="text-align:center; font-weight:700; font-size:14px; color:' + (allAdded ? 'var(--green-deep)' : 'var(--amber,#C8960C)') + ';">' + g.added + '</div>'
+                    + '<div style="text-align:center; font-size:14px; color:var(--ink-2);">' + g.followBus + '</div>'
+                    + '<div style="text-align:center; font-size:14px; color:var(--ink-2);">' + g.addedBus + '</div>'
+                    + '</div>';
+            });
+            html += '<div style="display:grid; grid-template-columns:1fr 48px 48px 48px 48px; gap:0; padding:10px 4px; background:var(--green-wash); border-radius:0 0 var(--r-sm) var(--r-sm); align-items:center;">'
+                + '<span style="font-weight:700; font-size:13px; color:var(--green-deep);">Total</span>'
+                + '<div style="text-align:center; font-weight:700; font-size:14px; color:var(--green-deep);">' + (t2.total||0) + '</div>'
+                + '<div style="text-align:center; font-weight:700; font-size:14px; color:var(--green-deep);">' + (t2.added||0) + '</div>'
+                + '<div style="text-align:center; font-weight:700; font-size:14px; color:var(--green-deep);">' + (t2.followBus||0) + '</div>'
+                + '<div style="text-align:center; font-weight:700; font-size:14px; color:var(--green-deep);">' + (t2.addedBus||0) + '</div>'
+                + '</div>';
+        } else {
+            // ── Desktop: original table ───────────────────────
+            var rows = (data.summary || []).map(function(g) {
+                return '<tr>'
+                    + '<td>Group ' + g.group + '</td>'
+                    + '<td>' + safeHtml(g.admin) + '</td>'
+                    + '<td><span class="summary-num">' + g.total + '</span></td>'
+                    + '<td><span class="summary-num">' + g.added + '</span></td>'
+                    + '<td><span class="summary-num">' + g.followBus + '</span></td>'
+                    + '<td><span class="summary-num">' + g.addedBus + '</span></td>'
+                    + '</tr>';
+            }).join('');
+            var t = data.totals || {};
+            rows += '<tr><td colspan="2">Total</td><td>' + (t.total||0) + '</td><td>' + (t.added||0) + '</td><td>' + (t.followBus||0) + '</td><td>' + (t.addedBus||0) + '</td></tr>';
+            html = '<table class="summary-table">'
+                + '<thead><tr><th>Group</th><th>Admin</th><th>Students</th><th>Added</th><th>Bus</th><th>Bus Grp</th></tr></thead>'
+                + '<tbody>' + rows + '</tbody></table>';
+        }
+        body.innerHTML = html;
+    } catch(e) {
+        body.innerHTML = '<div class="att-empty" style="color:var(--red-mid);">Connection error.</div>';
+    }
+}
+
 // ============================================================
 //  GROUPING MODULE — Super Admin only
 // ============================================================
@@ -3600,7 +4022,7 @@ function renderGroupResults(groups, totalAdded) {
                     <svg viewBox="0 0 24 24" fill="none" stroke="#C8960C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-.5-5"/></svg>
                 </div>
                 <div class="qaqc-title">Reset All Codes</div>
-                <div class="qaqc-desc">This will reset every student in the Codes sheet from USED back to UNUSED. Use this after an assessment is fully done and you are preparing for the next one.</div>
+                <div class="qaqc-desc">This will reset every student in the Assessment Sheet. Use this after an assessment is fully done and you are preparing for the next one.</div>
                 <div class="qaqc-actions">
                     <button class="btn btn-outline btn-sm" onclick="closeResetAll()">Cancel</button>
                     <button class="btn btn-amber btn-sm" onclick="closeResetAll(); resetAllCodes();">
@@ -3625,6 +4047,55 @@ function renderGroupResults(groups, totalAdded) {
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-.5-5"/></svg>
                         Yes, Reset
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Grouping Edit Overlay -->
+        <div class="qaqc-overlay" id="studentEditOverlay">
+            <div class="qaqc-modal" style="max-width:400px;">
+                <div class="qaqc-title" id="editStudentName">Student Name</div>
+                <div class="qaqc-desc" id="editStudentReg" style="font-family:monospace; font-size:13px; margin-bottom:16px;"></div>
+                <input type="hidden" id="editStudentIdx">
+
+                <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:var(--ink-3); display:block; margin-bottom:4px;">Added to WhatsApp Group</label>
+                        <select id="editAdded" class="input">
+                            <option value="">— Not set —</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:var(--ink-3); display:block; margin-bottom:4px;">Follow Church Bus</label>
+                        <select id="editFollowBus" class="input">
+                            <option value="">— Not set —</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:var(--ink-3); display:block; margin-bottom:4px;">Bus Location</label>
+                        <input type="text" id="editBusLoc" class="input" placeholder="e.g. Lekki, Ajah">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:var(--ink-3); display:block; margin-bottom:4px;">Added to Bus Group</label>
+                        <select id="editAddedBus" class="input">
+                            <option value="">— Not set —</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:var(--ink-3); display:block; margin-bottom:4px;">Comment</label>
+                        <input type="text" id="editComment" class="input" placeholder="Any note about this student">
+                    </div>
+                </div>
+
+                <div class="qaqc-actions" style="margin-top:20px;">
+                    <button class="btn btn-outline btn-sm" onclick="closeStudentEdit()">Cancel</button>
+                    <button class="btn btn-primary btn-sm" id="saveStudentEditBtn" onclick="saveStudentEdit()">Save</button>
                 </div>
             </div>
         </div>
