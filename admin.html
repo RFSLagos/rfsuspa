@@ -1801,6 +1801,7 @@ input:focus, select:focus { outline: none; }
                                     <label>Type</label>
                                     <select id="setupType" class="input">
                                         <option value="TEST">TEST</option>
+                                        <option value="MID-COURSE">MID-COURSE TEST</option>
                                         <option value="EXAM">EXAM</option>
                                     </select>
                                 </div>
@@ -1851,8 +1852,11 @@ input:focus, select:focus { outline: none; }
                                 <label>Assessment Type</label>
                                 <select id="scoreType" class="input" onchange="updateTopicList()">
                                     <option value="TEST">Test</option>
-                                    <option value="ASSIGNMENT">Assignment</option>
-                                    <option value="EXAM">Exam</option>
+                                    <option value="PROJECT">Project</option>
+                                    <option value="MID-WRITTEN">Mid-course Written</option>
+                                    <option value="MID-MCQ">Mid-course MCQ</option>
+                                    <option value="EXAM-WRITTEN">Final Exam Written</option>
+                                    <option value="EXAM-MCQ">Final Exam MCQ</option>
                                 </select>
                             </div>
                             <div class="sel-field">
@@ -2144,7 +2148,7 @@ input:focus, select:focus { outline: none; }
                 <div class="qaqc-check-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                All necessary test, assignment, and exam scores have been uploaded.
+                All necessary test, project, and exam scores have been uploaded.
             </div>
             <div class="qaqc-check">
                 <div class="qaqc-check-icon">
