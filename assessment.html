@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFS Assessment Portal</title>
-    <link rel="icon" type="image/png" href="/favicon.png">
+    <title>USpA Assessment Portal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -265,17 +264,63 @@
             color: #7ac042; display: block;
             font-size: 13px; margin-bottom: 2px;
         }
+        /* ── In-progress indicator (breathing circle + label) ── */
+        #inProgressIndicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .breath-ring {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: rgba(200,150,12,0.15);
+            border: 2px solid rgba(200,150,12,0.5);
+            display: flex; align-items: center; justify-content: center;
+            animation: breathe 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        .breath-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #C8960C;
+            animation: breatheDot 2s ease-in-out infinite;
+        }
+        @keyframes breathe {
+            0%,100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(200,150,12,0.4); }
+            50%      { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(200,150,12,0); }
+        }
+        @keyframes breatheDot {
+            0%,100% { opacity: 1;   transform: scale(1); }
+            50%      { opacity: 0.5; transform: scale(0.75); }
+        }
+        .in-progress-label {
+            font-size: 11px; font-weight: 700; color: rgba(200,150,12,0.85);
+            text-transform: uppercase; letter-spacing: .08em;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        /* ── Done button (hidden until submission confirmed) ── */
         #submitDoneBtn {
+            display: none;
             background: #2D6A2D; color: #fff;
             border: 2px solid #7ac042; border-radius: 8px;
             padding: 12px 20px; font-size: 14px; font-weight: 700;
             cursor: pointer; white-space: nowrap; flex-shrink: 0;
             font-family: 'DM Sans', sans-serif;
+            box-shadow: 0 0 18px rgba(45,106,45,0.65);
             transition: background 0.15s, transform 0.1s;
-            box-shadow: 0 0 12px rgba(45,106,45,0.4);
         }
-        #submitDoneBtn:active { transform: scale(0.97); }
-        #submitDoneBtn:hover  { background: #245A24; }
+        #submitDoneBtn.unlocked {
+            display: block;
+            animation: doneUnlock 0.6s cubic-bezier(.22,.68,0,1.3) both;
+        }
+        #submitDoneBtn.unlocked:hover  { background: #245A24; }
+        #submitDoneBtn.unlocked:active { transform: scale(0.97); }
+        @keyframes doneUnlock {
+            from { transform: scale(0.85); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
 
         /* ── Time-up screen ── */
         #timeUpScreen {
@@ -399,7 +444,7 @@
                 <span class="closed-title">
                     <span class="closed-pulse"></span>Assessment Not Yet Open
                 </span>
-                The assessment window is not currently open. Please wait till your Admin opens it.
+                The assessment window is not currently open. Please wait — this page will update automatically when your Admin opens it.
             </div>
 
             <div class="field">
@@ -418,11 +463,11 @@
             <div class="online-toggle-wrap">
                 <label class="online-check-row">
                     <input type="checkbox" id="onlineToggle" onchange="handleOnlineToggle()">
-                    <span class="online-check-label">I am Online</span>
+                    <span class="online-check-label">I am taking the exam outside Lagos</span>
                 </label>
                 <div class="online-code-field" id="onlineCodeField">
                     <label class="field" style="margin-bottom:0;">
-                        <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;">Online Assessment Code</span>
+                        <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;">Online Attendance Code</span>
                         <input type="text" id="onlineCodeInput" placeholder="Enter your online code" maxlength="10" autocomplete="off" oninput="this.value=this.value.toUpperCase();updateLoginBtn()">
                         <span style="font-size:11px;color:var(--text-3);margin-top:3px;">Enter your online code</span>
                     </label>
@@ -510,10 +555,18 @@
     <!-- Submit bar — kept as fallback for students who miss the auto-detect overlay -->
     <div id="submitBar">
         <div class="submit-bar-text">
-            <strong id="submitBarTitle">Submitted the form above?</strong>
-            <span id="submitBarSub">After Google Form shows "Your response has been recorded", tap this button.</span>
+            <strong id="submitBarTitle">Confirming Submission</strong>
+            <span id="submitBarSub">Once you've submitted, you can end your session.</span>
         </div>
-        <button id="submitDoneBtn" onclick="confirmSubmitted()">Done — End Session ✓</button>
+        <!-- Breathing indicator — visible while waiting for submission -->
+        <div id="inProgressIndicator">
+            <div class="breath-ring">
+                <div class="breath-dot"></div>
+            </div>
+            <span class="in-progress-label">In Progress</span>
+        </div>
+        <!-- Done button — hidden until submission confirmed -->
+        <button id="submitDoneBtn" onclick="submitDoneTap()">Done — End Session ✓</button>
     </div>
 <!-- Auto-detect overlay — appears when iframe navigates away (form submitted or link clicked) -->
 <div id="confirmOverlay" style="
@@ -579,6 +632,8 @@ let assessmentTopic = null;   // e.g. 'Principles of HOTR' or 'Final Exam'
 let examInProgress  = false;  // true while iframe exam is open
 let examIsOpen      = false;  // result of background check_assessment_open poll
 let examOpenPoller  = null;   // interval ID for background polling
+let submissionPoller    = null;  // interval ID for submission status polling
+let submissionConfirmed = false; // true once SUBMITTED detected from sheet
 
 const CAMPUS_LAT     = 6.4369984301299645;
 const CAMPUS_LNG     = 3.493390506792726;
@@ -747,7 +802,7 @@ function reopenExam() {
     }
     document.getElementById('barTimer').style.display = isExamTypeR ? 'inline-block' : 'none';
     const typeWordR = isExamTypeR ? 'exam' : 'test';
-    document.getElementById('submitBarTitle').textContent = 'Done with your ' + typeWordR + '?';
+    document.getElementById('submitBarTitle').textContent = 'Confirming Submission...';
 
     // Update bar timer display immediately with restored time
     const m = Math.floor(secondsLeft / 60);
@@ -770,7 +825,9 @@ function reopenExam() {
     saveSession(true);
 
     examInProgress = true;
+    submissionConfirmed = false;
     startBarTimer();
+    if (verifiedData && verifiedData.regNumber) startSubmissionPolling(verifiedData.regNumber);
 
     // Iframe block detection for restored sessions
     frame.addEventListener('load', () => {
@@ -1134,8 +1191,8 @@ function doRedirect() {
     document.getElementById('barTimer').style.display = isExamType ? 'inline-block' : 'none';
     // Bottom bar text
     const typeWord = isExamType ? 'exam' : 'test';
-    document.getElementById('submitBarTitle').textContent = 'Done with your ' + typeWord + '?';
-    document.getElementById('submitBarSub').textContent   = 'Only tap after you have submitted the form above.';
+    document.getElementById('submitBarTitle').textContent = 'Confirming Submission...';
+    document.getElementById('submitBarSub').textContent   = 'Once you have submitted, you can end session';
 
     // Set iframe src
     const frame = document.getElementById('examFrame');
@@ -1153,9 +1210,12 @@ function doRedirect() {
 
     // Activate beforeunload warning — cannot suppress alert() but CAN show browser warning
     examInProgress = true;
+    submissionConfirmed = false;
 
     // Start bar countdown
     startBarTimer();
+    // Start polling for submission confirmation
+    if (verifiedData && verifiedData.regNumber) startSubmissionPolling(verifiedData.regNumber);
 
     // ── Iframe block detection ───────────────────────────────────
     frame.addEventListener('load', () => {
@@ -1185,7 +1245,7 @@ function showConfirmOverlay() {
 
 // Manual fallback — submit bar button still works
 function confirmSubmitted() {
-    showConfirmOverlay();
+    showSubmitted();
 }
 
 // Go Back — reload the form URL from session, close overlay
@@ -1233,6 +1293,7 @@ function showIframeBlocked(formUrl) {
 function showSubmitted() {
     clearInterval(barTimerInterval);
     clearInterval(timerInterval);
+    clearInterval(submissionPoller);
     examInProgress = false;
     clearSession(); // session done — prevent restore on next load
 
@@ -1258,6 +1319,48 @@ if (!restoreSession()) {
 }
 
 // Warn student if they try to refresh or leave during exam
+// ════════════════════════════════════════════════════════════
+//  SUBMISSION POLLING — checks every 15s if student has submitted
+//  Unlocks the Done button only when status = SUBMITTED.
+// ════════════════════════════════════════════════════════════
+function startSubmissionPolling(regNumber) {
+    if (submissionPoller) clearInterval(submissionPoller);
+    submissionPoller = setInterval(async function() {
+        if (!examInProgress || submissionConfirmed) {
+            clearInterval(submissionPoller);
+            return;
+        }
+        try {
+            const url  = SCRIPT_URL + '?action=check_submission_status'
+                + '&reg=' + encodeURIComponent(regNumber)
+                + '&cb='  + Date.now();
+            const res  = await fetch(url);
+            const data = await res.json();
+            if (data.status === 'success' && data.submissionStatus === 'SUBMITTED') {
+                clearInterval(submissionPoller);
+                submissionConfirmed = true;
+                unlockDoneButton();
+            }
+        } catch(e) { /* silent — network blip, retry next interval */ }
+    }, 3000); // poll every 3 seconds
+}
+
+function unlockDoneButton() {
+    const btn       = document.getElementById('submitDoneBtn');
+    const indicator = document.getElementById('inProgressIndicator');
+    const title     = document.getElementById('submitBarTitle');
+    const sub       = document.getElementById('submitBarSub');
+    if (indicator) indicator.style.display = 'none';
+    if (btn)   btn.classList.add('unlocked');
+    if (title) title.textContent = 'Submission confirmed ✓';
+    if (sub)   sub.textContent   = 'Tap the button to end your session.';
+}
+
+function submitDoneTap() {
+    if (!submissionConfirmed) return; // button is hidden anyway — safety guard
+    confirmSubmitted();
+}
+
 window.addEventListener('beforeunload', function(e) {
     if (examInProgress) {
         e.preventDefault();
