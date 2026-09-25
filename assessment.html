@@ -527,7 +527,7 @@
             background: var(--bg-surface); border-top: 1px solid var(--border);
             -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none;
         }
-        .rs-app.kb-up .rs-kb { display: block; }
+        .rs-app.kb-up.own .rs-kb { display: block; }
         .rs-kr { display: flex; gap: 6px; margin-bottom: 11px; }
         .rs-kr:nth-child(4) { margin-bottom: 0; }
         .rs-ksp { flex: 1 1 0; }
@@ -583,7 +583,8 @@
 
         /* Phones held sideways are too short to write on */
         .rs-rotate { display: none; position: absolute; inset: 0; z-index: 20; align-items: center; justify-content: center; padding: 24px; text-align: center; background: var(--card); color: var(--text-2); font-size: 16px; }
-        @media (orientation: landscape) and (max-height: 480px) and (pointer: coarse) { .rs-rotate { display: flex; } }
+        /* Set by romansCheckRotate from the DEVICE orientation — a short split-screen window is not a sideways phone */
+        .rs-app.rotate .rs-rotate { display: flex; }
         @media (prefers-reduced-motion: reduce) { #romans-stage * { transition: none !important; } }
         .online-badge {
             display: inline-flex; align-items: center; gap: 6px;
@@ -632,7 +633,7 @@
 
             <div class="field">
                 <label>Registration Number</label>
-                <input type="text" id="regInput" placeholder="RFS / XXXX / XXX" maxlength="14" autocomplete="off" inputmode="text">
+                <input type="text" id="regInput" placeholder="RFS / XXXX / XXX" maxlength="14" autocomplete="off" inputmode="text" autocorrect="off" autocapitalize="characters" spellcheck="false">
                 <span class="hint">Format: RFS/2601/053</span>
                 <span class="err-text" id="regErr"></span>
             </div>
@@ -651,7 +652,7 @@
                 <div class="online-code-field" id="onlineCodeField">
                     <label class="field" style="margin-bottom:0;">
                         <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.05em;">Online Attendance Code</span>
-                        <input type="text" id="onlineCodeInput" placeholder="Enter your online code" maxlength="10" autocomplete="off" oninput="this.value=this.value.toUpperCase();updateLoginBtn()">
+                        <input type="text" id="onlineCodeInput" placeholder="Enter your online code" maxlength="10" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" oninput="this.value=this.value.toUpperCase();updateLoginBtn()">
                         <span style="font-size:11px;color:var(--text-3);margin-top:3px;">Enter your online code</span>
                     </label>
                 </div>
@@ -781,7 +782,7 @@
                 </div>
                 <div class="rs-text" id="rsText" role="textbox" aria-multiline="true" aria-label="Your verse"></div>
                 <textarea class="rs-ta" id="rsTa" aria-label="Your verse" maxlength="600"
-                          autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"></textarea>
+                          autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="next"></textarea>
             </div>
             <div class="rs-sheet">
                 <button class="rs-grab" type="button" onclick="romansReview()" aria-label="All verses"></button>
@@ -1686,6 +1687,10 @@ const RM_SIZES       = [18, 21, 25]; // "Aa" text sizes (px)
 const RM_CUES        = [120, 60, 30];// seconds left -> polite reminder
 const RM_SESSION_KEY = 'rfsRomansSession';
 const RM_TOUCH       = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+// Phones use their own keyboard. Our built-in keyboard (below) is kept behind this switch;
+// the tests force it on with window.RM_FORCE_OWN_KB so the way back stays proven.
+const RM_OWN_KEYBOARD = false;
+const RM_KB          = RM_TOUCH && (RM_OWN_KEYBOARD || window.RM_FORCE_OWN_KB === true);
 const RM_BEGIN_HTML  = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Begin Romans 13';
 const RM_ICON_NEXT   = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 4v16l13-8L7 4z"/></svg>';
 const RM_ICON_FINISH = '<svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M4 12.5l5 5L20 6"/></svg>';
@@ -1725,7 +1730,7 @@ const romans = {
     nodeBefore: null, nodeAfter: null,
     saved: ['', '', '', '', '', '', ''],   // text the server has confirmed, per verse
     caps: false, lastShiftAt: 0, lastSpaceAt: 0, touches: {}, tp: null, spaceTimer: null, kbRows: null,
-    submitT0: 0
+    submitT0: 0, nativeKb: false
 };
 
 function rmEl(id) { return document.getElementById(id); }
@@ -1794,7 +1799,8 @@ function romansStageOn(on) {
     rmEl('romans-stage').setAttribute('aria-hidden', on ? 'false' : 'true');
     document.body.classList.toggle('rs-on', on);
     romansZoomLock(on);
-    if (on) romansBuild();
+    if (on) { romansBuild(); romansCheckRotate(); }
+    romansFitViewport();
 }
 
 // No zoom while the Romans stage is up; the login page stays zoomable.
@@ -1809,15 +1815,36 @@ function romansZoomLock(on) {
     ['gesturestart', 'gesturechange', 'dblclick'].forEach(t => document[act](t, rmNoZoom, { passive: false }));
 }
 
+// Phone keyboard: iPhones do not shrink a fixed full-screen page when the keyboard opens, so
+// the stage is sized to the visible area (Android behaves the same way with this). A clearly
+// smaller visible area = keyboard up -> compact sheet (Back · dots · Next) above it.
+function romansFitViewport() {
+    const st = rmEl('romans-stage'), vv = window.visualViewport;
+    if (!vv || RM_KB || !st.classList.contains('on')) {
+        st.style.top = ''; st.style.height = ''; romans.nativeKb = false;
+        return;
+    }
+    st.style.top = Math.round(vv.offsetTop) + 'px';
+    st.style.height = Math.round(vv.height) + 'px';
+    const kb = window.innerHeight - vv.height > 120;
+    if (kb !== romans.nativeKb) {
+        romans.nativeKb = kb;
+        romansLayout();
+        if (!kb) romansCheckSplit();      // keyboard closed: the height check can run again
+    }
+}
+
 function romansScreen(id) {
     document.querySelectorAll('#romans-stage .rs-scr').forEach(s => s.classList.toggle('on', s.id === id));
     romansLayout();
 }
 
-// Keyboard up = touch device, writing screen, not hidden by the student.
+// Keyboard up = writing screen and either our keyboard (not hidden) or the phone's keyboard open.
 function romansLayout() {
     const writing = rmEl('rsWrite').classList.contains('on');
-    rmEl('rsApp').classList.toggle('kb-up', RM_TOUCH && writing && !romans.kbHidden);
+    const app = rmEl('rsApp');
+    app.classList.toggle('own', RM_KB);
+    app.classList.toggle('kb-up', writing && (RM_KB ? !romans.kbHidden : romans.nativeKb));
 }
 
 function romansSetHeader() {
@@ -1847,9 +1874,9 @@ function romansBuild() {
         b.onclick = () => romansGo(i);
         dots.appendChild(b);
     }
-    rmEl('rsText').style.display = RM_TOUCH ? '' : 'none';
-    rmEl('rsTa').style.display   = RM_TOUCH ? 'none' : '';
-    if (RM_TOUCH) romansBuildKeyboard();
+    rmEl('rsText').style.display = RM_KB ? '' : 'none';
+    rmEl('rsTa').style.display   = RM_KB ? 'none' : '';
+    if (RM_KB) romansBuildKeyboard();
     romansAttachListeners();
 }
 
@@ -1997,7 +2024,7 @@ function romansTick(silent) {
 // Laptop textarea -> draft. Only while the writing screen shows the current verse
 // (after a refresh the textarea is still empty until romansGo fills it).
 function romansCapture() {
-    if (!romans.active || RM_TOUCH || !rmEl('rsWrite').classList.contains('on')) return;
+    if (!romans.active || RM_KB || !rmEl('rsWrite').classList.contains('on')) return;
     const v = rmEl('rsTa').value;
     if (v !== romans.drafts[romans.cur]) { romans.drafts[romans.cur] = v; romans.dirty[romans.cur] = true; }
 }
@@ -2009,7 +2036,7 @@ function romansGo(i) {
     romansConfirmClose();
     romansScreen('rsWrite');
     romansRenderVerse();
-    if (!RM_TOUCH) rmEl('rsTa').focus();
+    if (!RM_KB) rmEl('rsTa').focus();      // from a tap, this keeps the phone keyboard up
     romansFlush();
     romansPersist();
 }
@@ -2029,7 +2056,8 @@ function romansRenderVerse() {
     rmEl('rsNext').setAttribute('aria-label', last ? 'Finish and review' : 'Next verse');
     rmEl('rsText').setAttribute('aria-label', 'Verse ' + n);
     rmEl('rsTa').setAttribute('aria-label', 'Verse ' + n);
-    if (!RM_TOUCH) {
+    if (!RM_KB) {
+        rmEl('rsTa').setAttribute('enterkeyhint', last ? 'done' : 'next');   // return key reads Next / Done
         rmEl('rsTa').value = romans.drafts[romans.cur];
         rmEl('rsTa').placeholder = 'Type verse ' + n + ' here';
     }
@@ -2045,7 +2073,7 @@ function romansPaintDots() {
 
 // Touch surface: text before the caret, the caret, text after (a div, so no phone keyboard).
 function romansRenderText() {
-    if (!RM_TOUCH) return;
+    if (!RM_KB) return;
     const el = rmEl('rsText');
     const t = romans.drafts[romans.cur] || '';
     romans.caret = Math.max(0, Math.min(romans.caret, t.length));
@@ -2330,7 +2358,7 @@ function romansTapText(e) {
 
 // A hardware keyboard on a tablet still types into our surface. Paste stays impossible.
 function romansHardwareKey(e) {
-    if (!RM_TOUCH || !romans.active || !rmEl('rsWrite').classList.contains('on')) return;
+    if (!RM_KB || !romans.active || !rmEl('rsWrite').classList.contains('on')) return;
     if (e.ctrlKey || e.metaKey || e.altKey) {
         if (e.key.toLowerCase() === 'v') { e.preventDefault(); romansCountPaste(); }
         return;
@@ -2449,6 +2477,19 @@ function romansAttachListeners() {
     romans.listening = true;
     const ta = rmEl('rsTa');
     ta.addEventListener('input', romansOnInput);
+    // Return key = next verse (verses need no line breaks); keyboard reads Next / Done
+    ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); romansNext(); }
+    });
+    ta.addEventListener('blur', () => setTimeout(romansCheckSplit, 300));
+    // Tapping Back / Next / a dot must not take focus from the box (the keyboard would close and reopen)
+    const keepFocus = e => { if (!RM_KB && document.activeElement === ta && e.target.closest('button')) e.preventDefault(); };
+    rmEl('rsWrite').querySelector('.rs-sheet').addEventListener('pointerdown', keepFocus);
+    rmEl('rsWrite').querySelector('.rs-sheet').addEventListener('mousedown', keepFocus);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', romansFitViewport);
+        window.visualViewport.addEventListener('scroll', romansFitViewport);
+    }
     ta.addEventListener('paste', romansBlockPaste);
     ta.addEventListener('drop', romansBlockPaste);
     ta.addEventListener('beforeinput', e => {
@@ -2502,17 +2543,37 @@ function romansOnVisibility() {
     }
 }
 
-// Split screen / floating window on phones and tablets (not flagged on laptops).
-function romansCheckSplit() {
-    if (!romans.active || romans.counters.split || !RM_TOUCH || !screen.width) return;
-    const landscape = screen.orientation
+// How the phone/tablet itself is held (not the shape of the browser window).
+function romansDeviceLandscape() {
+    return screen.orientation
         ? screen.orientation.type.indexOf('landscape') === 0
         : Math.abs(window.orientation || 0) === 90;
-    const fullWidth = landscape ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-    if (window.innerWidth / fullWidth < 0.8) {
+}
+
+// Split screen / floating window on phones and tablets (not flagged on laptops).
+// Side by side (iPad, landscape) = page much narrower than the screen. Android stacks split
+// screen top/bottom when the phone is upright = full width but much shorter. The height test
+// runs only upright: browser bars take ~15-20% of the height, a split takes ~50%.
+function romansCheckSplit() {
+    romansCheckRotate();
+    if (!romans.active || romans.counters.split || !RM_TOUCH || !screen.width || !screen.height) return;
+    const landscape = romansDeviceLandscape();
+    const long = Math.max(screen.width, screen.height), short = Math.min(screen.width, screen.height);
+    const narrow = window.innerWidth / (landscape ? long : short) < 0.8;
+    // The phone keyboard can shrink the page on Android: no height check while typing
+    // (re-checked when the box loses focus or the keyboard closes).
+    const typing = !RM_KB && (romans.nativeKb || document.activeElement === rmEl('rsTa'));
+    const short_ = !landscape && !typing && window.innerHeight / long < 0.7;
+    if (narrow || short_) {
         romans.counters.split = 1;
         romans.dirty[romans.cur] = true;
+        romansNotice('Split screen is recorded for your instructor.');
     }
+}
+
+// "Turn your phone upright" only when the device is really sideways and too short to write on.
+function romansCheckRotate() {
+    rmEl('rsApp').classList.toggle('rotate', RM_TOUCH && romansDeviceLandscape() && window.innerHeight <= 480);
 }
 
 // While writing, notices float just above the sheet so they never cover the verse header
