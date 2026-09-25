@@ -411,6 +411,17 @@
         /* flex-shrink:0 — .card has overflow:hidden, which would otherwise let it shrink to the
            screen height and clip its bottom (the MCQ confirm box and Start button) */
         .page-scroll > .card { margin: auto 0; flex-shrink: 0; }
+        /* MCQ confirmation (and its loading screen) fill the phone like the Romans stage;
+           wider screens get the same centred 460-px panel as the stage. */
+        body.mcq-full .page-scroll { padding: 0; }
+        body.mcq-full .page-scroll > .card {
+            margin: 0; max-width: none; min-height: 100%; border-radius: 0; box-shadow: none; animation: none;
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        @media (min-width: 520px) {
+            body.mcq-full .page-scroll { padding: 24px 0; }
+            body.mcq-full .page-scroll > .card { max-width: 460px; border-radius: var(--r-lg); box-shadow: var(--shadow); }
+        }
 
         /* ════ ROMANS STAGE — Romans 13:1-7, full screen ════
            Structure = UI contract (reference/romans13-stepper.html); colours and type = suite tokens.
@@ -523,23 +534,22 @@
         /* Our keyboard (phones/tablets) — iPhone portrait structure, suite colours.
            No suggestions, emoji, clipboard or dictation. */
         .rs-kb {
-            display: none; position: relative; flex: none; padding: 8px 3px calc(4px + env(safe-area-inset-bottom, 0px));
+            display: none; position: relative; flex: none; padding: 8px 0 calc(4px + env(safe-area-inset-bottom, 0px));
             background: var(--bg-surface); border-top: 1px solid var(--border);
             -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none;
         }
         .rs-app.kb-up.own .rs-kb { display: block; }
-        .rs-kr { display: flex; gap: 6px; margin-bottom: 11px; }
+        /* Rows and keys follow the iPhone keyboard (375-pt grid): keys sit at x/375 and w/375 of the
+           width; --kh / --kg (key height, row gap) are set by romansKbSize. */
+        .rs-kr { position: relative; height: var(--kh, 43px); margin-bottom: var(--kg, 11px); }
         .rs-kr:nth-child(4) { margin-bottom: 0; }
-        .rs-ksp { flex: 1 1 0; }
         .rs-k {
-            flex: 1 1 0; min-width: 0; height: 42px; border-radius: 5px; cursor: pointer;
+            position: absolute; top: 0; height: 100%; border-radius: 5px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             background: var(--card); color: var(--text); box-shadow: 0 1px 0 rgba(0,0,0,.3);
             font: 400 23px/1 -apple-system, 'SF Pro Text', system-ui, Roboto, 'Helvetica Neue', sans-serif;
         }
         .rs-k svg { width: 24px; height: 24px; display: block; }
-        @media (min-width: 400px) { .rs-k { height: 46px; } }
-        @media (max-height: 700px) { .rs-k { height: 40px; } .rs-kr { margin-bottom: 9px; } }
         .rs-k.fn { background: rgba(0,0,0,.12); color: var(--text); }
         .rs-k.fn.down, .rs-k.fn.on { background: var(--card); }
         .rs-k.caps { box-shadow: 0 1px 0 rgba(0,0,0,.3), inset 0 -3px 0 var(--accent); }
@@ -550,6 +560,7 @@
         .rs-k[data-k=","] span { transform: translateY(-9px); }
         .rs-k[data-k="."] span { transform: translateY(-10px); }
         .rs-k[data-k="'"] span { transform: translateY(3px); }
+        .rs-k[data-k="?"] { font-size: 23px; }
         .rs-k.nx { background: var(--accent); color: #fff; font-size: 16px; font-weight: 600; }
         .rs-k.nx.down { background: #245A24; }
         .rs-pop {
@@ -1014,6 +1025,8 @@ function clearErr(input, el)     { input.classList.remove('invalid'); el.classLi
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    document.body.classList.toggle('mcq-full', id === 'screenInstructions' || id === 'screenRedirect');
+    document.querySelector('.page-scroll').scrollTop = 0;
 }
 
 function resetBtn() {
@@ -1687,21 +1700,24 @@ const RM_SIZES       = [18, 21, 25]; // "Aa" text sizes (px)
 const RM_CUES        = [120, 60, 30];// seconds left -> polite reminder
 const RM_SESSION_KEY = 'rfsRomansSession';
 const RM_TOUCH       = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-// Phones use their own keyboard. Our built-in keyboard (below) is kept behind this switch;
-// the tests force it on with window.RM_FORCE_OWN_KB so the way back stays proven.
-const RM_OWN_KEYBOARD = false;
-const RM_KB          = RM_TOUCH && (RM_OWN_KEYBOARD || window.RM_FORCE_OWN_KB === true);
+// Phones and tablets type on our built-in keyboard (iPhone layout). false = the phone's own
+// keyboard instead (that path is kept and tested). Tests pick one with window.RM_FORCE_KB.
+const RM_OWN_KEYBOARD = true;
+const RM_KB          = RM_TOUCH && (window.RM_FORCE_KB === 'native' ? false : window.RM_FORCE_KB === 'own' ? true : RM_OWN_KEYBOARD);
 const RM_BEGIN_HTML  = '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M8 5v10l7-5-7-5z"/></svg>Begin Romans 13';
 const RM_ICON_NEXT   = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 4v16l13-8L7 4z"/></svg>';
 const RM_ICON_FINISH = '<svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M4 12.5l5 5L20 6"/></svg>';
-// iPhone portrait layout; [key, width] with width in letter-key units (each row = 10).
+// iPhone portrait keyboard, measured on its 375-pt-wide layout: [key, x, width] in points.
+// Rows 1-2 are the iPhone's; row 3 adds "?" after M (shift and delete 36 instead of 42 to fit);
+// row 4 keeps our keys with the iPhone's 143-pt space bar exactly centred (116 + 71.5 = 187.5).
+const RM_KB_W = 375;
 const RM_KB_ROWS = [
-    [['q'], ['w'], ['e'], ['r'], ['t'], ['y'], ['u'], ['i'], ['o'], ['p']],
-    [['_', 0.5], ['a'], ['s'], ['d'], ['f'], ['g'], ['h'], ['j'], ['k'], ['l'], ['_', 0.5]],
-    [['shift', 1.3], ['_', 0.2], ['z'], ['x'], ['c'], ['v'], ['b'], ['n'], ['m'], ['_', 0.2], ['back', 1.3]],
-    // Space centred: the left group has one more gap than the right, so it is ~0.16 of a key narrower.
-    [['hide', 0.97], [',', 0.85], ["'", 0.85], ['space', 4.5], ['.', 0.85], ['next', 1.98]]
+    'qwertyuiop'.split('').map((k, i) => [k, 5 + 37 * i, 31]),
+    'asdfghjkl'.split('').map((k, i) => [k, 21.75 + 38 * i, 32]),
+    [['shift', 3, 36]].concat('zxcvbnm?'.split('').map((k, i) => [k, 45 + 36.4 * i, 30.4]), [['back', 336, 36]]),
+    [['hide', 3, 37], [',', 46, 29], ["'", 81, 29], ['space', 116, 143], ['.', 265, 29], ['next', 300, 72]]
 ];
+const RM_CANCEL_COMMIT_MS = 500;    // a short press the phone cancels (fast taps on iOS) still types
 const RM_SPACE_SLOP = 10;           // px beside the space bar that still count as space (near-misses on . and ')
 const RM_KB_LABEL = { space: 'space', next: 'Next' };
 // Function-key icons: one 24px grid, one stroke weight, so they match whatever font the phone has.
@@ -1714,7 +1730,7 @@ const RM_KB_ICON = {
     hide:      RM_SVG('<rect x="3" y="3.5" width="18" height="11" rx="2"/><path d="M7 7.5h.01M10.3 7.5h.01M13.7 7.5h.01M17 7.5h.01M8 11h8"/><path d="m9 18 3 2.5 3-2.5"/>')
 };
 const RM_KB_ARIA  = { shift: 'Shift', back: 'Delete', hide: 'Hide keyboard', space: 'Space — hold and drag to move the cursor',
-                      next: 'Next verse', ',': 'Comma', '.': 'Full stop', "'": 'Apostrophe' };
+                      next: 'Next verse', ',': 'Comma', '.': 'Full stop', "'": 'Apostrophe', '?': 'Question mark' };
 const RM_TIMEOUTS = { romans_save: 15000, romans_begin: 20000, romans_submit: 25000 }; // ms before a request is abandoned
 const RM_MAX_URL  = 6000;           // longest submit URL before big verses are sent first
 
@@ -2116,10 +2132,10 @@ function romansBuildKeyboard() {
         line.className = 'rs-kr';
         const keys = [];
         row.forEach(spec => {
-            const k = spec[0], grow = spec[1] || 1;
+            const k = spec[0];
             const el = document.createElement('div');
-            el.style.flexGrow = grow;
-            if (k === '_') { el.className = 'rs-ksp'; line.appendChild(el); return; }
+            el.style.left = (100 * spec[1] / RM_KB_W) + '%';
+            el.style.width = (100 * spec[2] / RM_KB_W) + '%';
             el.className = 'rs-k' + (k === 'space' ? ' sp' : k === 'next' ? ' nx' : (k.length > 1 ? ' fn' : /^[a-z]$/.test(k) ? '' : ' pu'));
             el.dataset.k = k;
             el.setAttribute('role', 'button');
@@ -2133,6 +2149,7 @@ function romansBuildKeyboard() {
         kb.appendChild(line);
         romans.kbRows.push({ el: line, keys: keys });
     });
+    romansKbSize();
     const pop = document.createElement('div');
     pop.className = 'rs-pop';
     pop.id = 'rsPop';
@@ -2144,7 +2161,7 @@ function romansBuildKeyboard() {
         Object.keys(romans.touches).forEach(id => romansKbRelease(Number(id), true)); // rollover
         const key = romansKbHit(e.clientX, e.clientY);
         if (!key) return;
-        romans.touches[e.pointerId] = { key: key };
+        romans.touches[e.pointerId] = { key: key, t0: Date.now() };
         romansKbPress(key, e.clientX, e.clientY, false);
     });
     kb.addEventListener('pointermove', e => {
@@ -2157,9 +2174,24 @@ function romansBuildKeyboard() {
         if (key && key !== t.key) { romansKbUnpress(t.key); t.key = key; romansKbPress(key, e.clientX, e.clientY, true); }
     });
     kb.addEventListener('pointerup', e => romansKbRelease(e.pointerId, true));
-    kb.addEventListener('pointercancel', e => romansKbRelease(e.pointerId, false));
+    kb.addEventListener('pointercancel', e => {        // iOS cancels some fast taps: a short press still counts
+        const t = romans.touches[e.pointerId];
+        romansKbRelease(e.pointerId, !!t && !romans.tp && Date.now() - t.t0 < RM_CANCEL_COMMIT_MS);
+    });
     kb.addEventListener('contextmenu', e => e.preventDefault());
     rmEl('rsText').addEventListener('click', romansTapText);
+}
+
+// Key height and row gap: the iPhone's 43 / 11 pt, scaled with width (0.93-1.1x);
+// short screens (<= 700 px) get 40 / 9 so the verse keeps room.
+function romansKbSize() {
+    const kb = rmEl('rsKb');
+    if (!kb) return;
+    const w = rmEl('rsApp').clientWidth || window.innerWidth;
+    const s = Math.max(0.93, Math.min(1.1, w / RM_KB_W));
+    const small = window.innerHeight <= 700;
+    kb.style.setProperty('--kh', (small ? 40 : Math.round(43 * s)) + 'px');
+    kb.style.setProperty('--kg', (small ? 9 : Math.round(11 * s)) + 'px');
 }
 
 // Nearest row, then nearest key in it — taps in the gaps still land on a key.
@@ -2501,6 +2533,7 @@ function romansAttachListeners() {
     document.addEventListener('paste', e => { if (romans.active && e.target !== ta) { e.preventDefault(); romansCountPaste(); } });
     document.addEventListener('visibilitychange', romansOnVisibility);
     window.addEventListener('resize', romansCheckSplit);
+    window.addEventListener('resize', () => { if (RM_KB) romansKbSize(); });
     window.addEventListener('online', () => { if (romans.active) romansFlush(); });
 }
 
