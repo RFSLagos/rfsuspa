@@ -417,6 +417,9 @@
            Serif (system Georgia) is used for the scripture writing surface only. */
         #romans-stage { display: none; position: fixed; inset: 0; z-index: 9990; background: var(--card); color: var(--text); }
         #romans-stage.on { display: block; }
+        /* No double-tap / pinch zoom while writing (the keyboard handles its own touches) */
+        #romans-stage, #romans-stage * { touch-action: manipulation; }
+        #romans-stage .rs-kb { touch-action: none; }
         body.rs-on .page-scroll { visibility: hidden; }
         .rs-app {
             position: relative; height: 100%; max-width: 460px; margin: 0 auto;
@@ -533,15 +536,21 @@
             flex: 1 1 0; min-width: 0; height: 42px; border-radius: 5px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             background: var(--card); color: var(--text); box-shadow: 0 1px 0 rgba(0,0,0,.3);
-            font: 400 23px/1 'DM Sans', sans-serif;
+            font: 400 23px/1 -apple-system, 'SF Pro Text', system-ui, Roboto, 'Helvetica Neue', sans-serif;
         }
+        .rs-k svg { width: 24px; height: 24px; display: block; }
         @media (min-width: 400px) { .rs-k { height: 46px; } }
         @media (max-height: 700px) { .rs-k { height: 40px; } .rs-kr { margin-bottom: 9px; } }
-        .rs-k.fn { background: rgba(0,0,0,.12); font-size: 20px; }
+        .rs-k.fn { background: rgba(0,0,0,.12); color: var(--text); }
         .rs-k.fn.down, .rs-k.fn.on { background: var(--card); }
         .rs-k.caps { box-shadow: 0 1px 0 rgba(0,0,0,.3), inset 0 -3px 0 var(--accent); }
         .rs-k.sp { font-size: 16px; color: var(--text-2); }
         .rs-k.sp.down { background: rgba(0,0,0,.12); }
+        .rs-k.pu { font-size: 28px; }
+        .rs-k.pu span { display: block; line-height: 1; }
+        .rs-k[data-k=","] span { transform: translateY(-9px); }
+        .rs-k[data-k="."] span { transform: translateY(-10px); }
+        .rs-k[data-k="'"] span { transform: translateY(3px); }
         .rs-k.nx { background: var(--accent); color: #fff; font-size: 16px; font-weight: 600; }
         .rs-k.nx.down { background: #245A24; }
         .rs-pop {
@@ -909,6 +918,7 @@ let studentType     = null;   // 'PHYSICAL' or 'ONLINE'
 let assessmentType  = null;   // 'TEST' or 'EXAM' — set from config on load
 let assessmentTopic = null;   // e.g. 'Principles of HOTR' or 'Final Exam'
 let examInProgress  = false;  // true while iframe exam is open
+let sessionRomansMode = '';   // Config I2 from check_assessment_open ('' = no Romans)
 let examIsOpen      = false;  // result of background check_assessment_open poll
 let examOpenPoller  = null;   // interval ID for background polling
 let submissionPoller    = null;  // interval ID for submission status polling
@@ -1133,31 +1143,49 @@ function calcDistance(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Fast fix first (Wi-Fi / network, usually < 1 s indoors), then GPS refines it in the
+// background. Waiting on GPS alone could take ~20 s inside a hall. The server re-checks
+// the geofence at sign-in, so a quick fix is safe.
+const LOC_CACHE_KEY = 'rfsLastFix';
+const LOC_CACHE_MS  = 5 * 60 * 1000;
+let locWatchId = null;
+
 function startLocation() {
     if (!navigator.geolocation) {
         setLocPill('Not supported', 'err');
         return;
     }
-    function onSuccess(pos) {
-        userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, userLocation.latitude, userLocation.longitude);
-        if (dist <= MAX_DISTANCE_M) {
-            setLocPill('On campus', 'ok');
-        } else {
-            setLocPill((dist / 1000).toFixed(2) + 'km away', 'err');
-        }
+    let onCampus = false, gotFix = false, failures = 0;
+    function useFix(lat, lng) {
+        gotFix = true;
+        const dist = calcDistance(CAMPUS_LAT, CAMPUS_LNG, lat, lng);
+        if (onCampus && dist > MAX_DISTANCE_M) return;          // never flip back from "On campus"
+        userLocation = { latitude: lat, longitude: lng };
+        onCampus = dist <= MAX_DISTANCE_M;
+        setLocPill(onCampus ? 'On campus' : (dist / 1000).toFixed(2) + 'km away', onCampus ? 'ok' : 'err');
+        try { sessionStorage.setItem(LOC_CACHE_KEY, JSON.stringify({ lat: lat, lng: lng, at: Date.now() })); } catch (e) {}
+        if (onCampus) stopWatch();
         updateLoginBtn();
     }
+    function onSuccess(pos) { useFix(pos.coords.latitude, pos.coords.longitude); }
     function onError(err) {
-        if (err.code === 1) setLocPill('Access denied', 'err');
-        else if (err.code === 3) {
-            // Timeout — retry with high accuracy
-            navigator.geolocation.getCurrentPosition(onSuccess, () => setLocPill('Unavailable', 'err'),
-                { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 });
-        } else setLocPill('Unavailable', 'err');
+        if (err.code === 1) { stopWatch(); setLocPill('Access denied', 'err'); updateLoginBtn(); return; }
+        if (++failures >= 2 && !gotFix) setLocPill('Unavailable', 'err');
     }
+    function stopWatch() {
+        if (locWatchId !== null) { navigator.geolocation.clearWatch(locWatchId); locWatchId = null; }
+    }
+
+    try {                                                          // a recent fix from this tab shows at once
+        const c = JSON.parse(sessionStorage.getItem(LOC_CACHE_KEY) || 'null');
+        if (c && Date.now() - c.at < LOC_CACHE_MS) useFix(c.lat, c.lng);
+    } catch (e) {}
     navigator.geolocation.getCurrentPosition(onSuccess, onError,
-        { timeout: 8000, enableHighAccuracy: true, maximumAge: 60000 });
+        { enableHighAccuracy: false, maximumAge: LOC_CACHE_MS, timeout: 5000 });
+    stopWatch();
+    locWatchId = navigator.geolocation.watchPosition(onSuccess, onError,
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+    setTimeout(() => { stopWatch(); if (!gotFix) setLocPill('Unavailable', 'err'); }, 30000);
 }
 
 function setLocPill(text, state) {
@@ -1187,6 +1215,7 @@ async function checkAssessmentOpen() {
         if (data.status === 'success') {
             assessmentType  = data.assessmentType || 'EXAM'; // 'TEST' or 'EXAM'
             assessmentTopic = data.topic          || '';
+            sessionRomansMode = data.romansMode   || '';
 
             const title = document.getElementById('assessmentTitle');
             const badge = document.getElementById('assessmentTypeBadge');
@@ -1240,7 +1269,8 @@ async function handleLogin() {
     try {
         // ── Step 1: For online students, validate session code FIRST
         //    before consuming the exam code ──
-        if (isOnline) {
+        //    (Romans sessions skip this: verify_assessment checks the code on the server.)
+        if (isOnline && !sessionRomansMode) {
             loginBtn.innerHTML = '<span style="font-size:14px">Checking session code…</span>';
             const scUrl = SCRIPT_URL
                 + '?action=validate_session_code'
@@ -1276,7 +1306,7 @@ async function handleLogin() {
         if (data.romansDone) {
             loginStatus.textContent = 'Romans 13 already submitted ✓ — continuing to your MCQ…';
             loginStatus.className   = 'status-msg success';
-            setTimeout(() => startMcqDirect(data, reg, isOnline), 1000);
+            setTimeout(() => startMcqDirect(data, reg, isOnline), 400);
             return;
         }
 
@@ -1649,7 +1679,16 @@ const RM_KB_ROWS = [
     [['shift', 1.3], ['_', 0.2], ['z'], ['x'], ['c'], ['v'], ['b'], ['n'], ['m'], ['_', 0.2], ['back', 1.3]],
     [['hide', 1.25], [','], ['space', 3.75], ['.'], ["'"], ['next', 2]]
 ];
-const RM_KB_LABEL = { shift: '⇧', back: '⌫', hide: '⌄', space: 'space', next: 'Next' };
+const RM_KB_LABEL = { space: 'space', next: 'Next' };
+// Function-key icons: one 24px grid, one stroke weight, so they match whatever font the phone has.
+const RM_SVG = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">' + d + '</svg>';
+const RM_KB_ICON = {
+    shift:     RM_SVG('<path d="M12 4 4 12.5h4.5V19h7v-6.5H20z"/>'),
+    shiftOn:   RM_SVG('<path fill="currentColor" d="M12 4 4 12.5h4.5V19h7v-6.5H20z"/>'),
+    caps:      RM_SVG('<path fill="currentColor" d="M12 3 4 11.5h4.5V16h7v-4.5H20z"/><path d="M8.5 20h7"/>'),
+    back:      RM_SVG('<path d="M9 5h11v14H9l-6-7z"/><path d="m12.5 9.5 5 5m0-5-5 5"/>'),
+    hide:      RM_SVG('<rect x="3" y="3.5" width="18" height="11" rx="2"/><path d="M7 7.5h.01M10.3 7.5h.01M13.7 7.5h.01M17 7.5h.01M8 11h8"/><path d="m9 18 3 2.5 3-2.5"/>')
+};
 const RM_KB_ARIA  = { shift: 'Shift', back: 'Delete', hide: 'Hide keyboard', space: 'Space — hold and drag to move the cursor',
                       next: 'Next verse', ',': 'Comma', '.': 'Full stop', "'": 'Apostrophe' };
 const RM_TIMEOUTS = { romans_save: 15000, romans_begin: 20000, romans_submit: 25000 }; // ms before a request is abandoned
@@ -1658,10 +1697,10 @@ const RM_MAX_URL  = 6000;           // longest submit URL before big verses are 
 const romans = {
     active: false, started: false, submitting: false, autoSubmitted: false,
     reg: '', key: '', session: '', mode: '', isOnline: false, onlineCode: '',
-    name: '', firstName: '', topic: '', type: '', versions: [], durationSec: 600, version: '',
+    name: '', firstName: '', topic: '', type: '', versions: [], durationSec: 420, version: '',
     drafts: ['', '', '', '', '', '', ''], dirty: {}, cur: 0, seq: 0, caret: 0, sizeStep: 1,
     counters: { leaves: 0, leaveSec: 0, pastes: 0, bigInserts: 0, split: 0 },
-    hiddenAt: 0, remainingSec: 600, syncedAt: 0, cuesDone: {}, kbHidden: false, shift: false,
+    hiddenAt: 0, remainingSec: 420, syncedAt: 0, cuesDone: {}, kbHidden: false, shift: false,
     timerId: null, autosaveId: null, retryId: null, retryMs: 0, repeatId: null, flushing: null,
     listening: false, built: false, retryAction: null, noticeId: null, lastReason: '',
     nodeBefore: null, nodeAfter: null,
@@ -1735,7 +1774,20 @@ function romansStageOn(on) {
     rmEl('romans-stage').classList.toggle('on', on);
     rmEl('romans-stage').setAttribute('aria-hidden', on ? 'false' : 'true');
     document.body.classList.toggle('rs-on', on);
+    romansZoomLock(on);
     if (on) romansBuild();
+}
+
+// No zoom while the Romans stage is up; the login page stays zoomable.
+// iOS WebKit ignores user-scalable=no, so gestures and double-taps are also cancelled there.
+const RM_VIEWPORT = document.querySelector('meta[name=viewport]');
+const RM_VIEWPORT_OPEN = RM_VIEWPORT ? RM_VIEWPORT.content : '';
+function rmNoZoom(e) { if (e.cancelable) e.preventDefault(); }
+function romansZoomLock(on) {
+    if (RM_VIEWPORT) RM_VIEWPORT.content = on
+        ? 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' : RM_VIEWPORT_OPEN;
+    const act = on ? 'addEventListener' : 'removeEventListener';
+    ['gesturestart', 'gesturechange', 'dblclick'].forEach(t => document[act](t, rmNoZoom, { passive: false }));
 }
 
 function romansScreen(id) {
@@ -1788,7 +1840,7 @@ function romansStart(data, isOnline, onlineCode) {
         reg: data.regNumber, key: data.attemptKey, session: data.session, mode: data.romansMode,
         isOnline: !!isOnline, onlineCode: onlineCode || '', name: data.name, firstName: data.firstName,
         topic: data.topic, type: data.assessmentType, versions: data.versions || [],
-        durationSec: data.durationSec || 600
+        durationSec: data.durationSec || 420
     });
     if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
     romansStageOn(true);
@@ -1906,7 +1958,7 @@ function romansTick(silent) {
     rmEl('rsTimer').textContent = romansFmt(left);
     rmEl('rsTimer').classList.toggle('low', low);
     rmEl('rsBar').classList.toggle('low', low);
-    rmEl('rsBarFill').style.width = Math.min(100, 100 * left / (romans.durationSec || 600)) + '%';
+    rmEl('rsBarFill').style.width = Math.min(100, 100 * left / (romans.durationSec || 420)) + '%';
     // Reminders at 2:00, 1:00 and 0:30 — only the latest one if several are already due
     const due = RM_CUES.filter(c => left <= c && !romans.cuesDone[c]);
     if (due.length) {
@@ -2016,11 +2068,13 @@ function romansBuildKeyboard() {
             const el = document.createElement('div');
             el.style.flexGrow = grow;
             if (k === '_') { el.className = 'rs-ksp'; line.appendChild(el); return; }
-            el.className = 'rs-k' + (k === 'space' ? ' sp' : k === 'next' ? ' nx' : (k.length > 1 ? ' fn' : ''));
+            el.className = 'rs-k' + (k === 'space' ? ' sp' : k === 'next' ? ' nx' : (k.length > 1 ? ' fn' : /^[a-z]$/.test(k) ? '' : ' pu'));
             el.dataset.k = k;
             el.setAttribute('role', 'button');
             el.setAttribute('aria-label', RM_KB_ARIA[k] || k);
-            el.textContent = RM_KB_LABEL[k] || k;
+            if (RM_KB_ICON[k]) el.innerHTML = RM_KB_ICON[k];
+            else if (/^[,.']$/.test(k)) el.innerHTML = '<span>' + k + '</span>';
+            else el.textContent = RM_KB_LABEL[k] || k;
             line.appendChild(el);
             keys.push(el);
         });
@@ -2158,7 +2212,7 @@ function romansPaintKeys() {
         const k = el.dataset.k;
         if (/^[a-z]$/.test(k)) el.textContent = upper ? k.toUpperCase() : k;
         if (k === 'shift') {
-            el.textContent = romans.caps ? '⇪' : (romans.shift ? '⬆' : '⇧');
+            el.innerHTML = RM_KB_ICON[romans.caps ? 'caps' : (romans.shift ? 'shiftOn' : 'shift')];
             el.classList.toggle('on', romans.shift || romans.caps);
             el.classList.toggle('caps', romans.caps);
         }
