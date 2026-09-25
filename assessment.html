@@ -408,7 +408,9 @@
             display: flex; flex-direction: column; align-items: center;
             padding: 24px 16px;
         }
-        .page-scroll > .card { margin: auto 0; }
+        /* flex-shrink:0 — .card has overflow:hidden, which would otherwise let it shrink to the
+           screen height and clip its bottom (the MCQ confirm box and Start button) */
+        .page-scroll > .card { margin: auto 0; flex-shrink: 0; }
 
         /* ════ ROMANS STAGE — Romans 13:1-7, full screen ════
            Structure = UI contract (reference/romans13-stepper.html); colours and type = suite tokens.
@@ -516,26 +518,40 @@
         .rs-app.kb-up .rs-ctl svg { width: 24px; height: 24px; }
         .rs-app.kb-up .rs-ctl .big svg { width: 34px; height: 34px; }
 
-        /* Our keyboard (phones/tablets) — no suggestions, emoji, clipboard or dictation */
+        /* Our keyboard (phones/tablets) — iPhone portrait structure, suite colours.
+           No suggestions, emoji, clipboard or dictation. */
         .rs-kb {
-            display: none; flex: none; padding: 6px 3px calc(6px + env(safe-area-inset-bottom, 0px));
+            display: none; position: relative; flex: none; padding: 8px 3px calc(4px + env(safe-area-inset-bottom, 0px));
             background: var(--bg-surface); border-top: 1px solid var(--border);
-            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none;
         }
         .rs-app.kb-up .rs-kb { display: block; }
-        .rs-kr { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
-        .rs-kr:last-child { margin-bottom: 0; }
-        .rs-kr.r2 { padding: 0 16px; }
+        .rs-kr { display: flex; gap: 6px; margin-bottom: 11px; }
+        .rs-kr:nth-child(4) { margin-bottom: 0; }
+        .rs-ksp { flex: 1 1 0; }
         .rs-k {
-            flex: 1 1 0; max-width: 42px; height: 42px; padding: 0; border: 0; border-radius: 6px; cursor: pointer;
-            background: var(--card); color: var(--text); box-shadow: 0 1px 0 rgba(0,0,0,.18);
-            font-family: 'DM Sans', sans-serif; font-size: 19px;
+            flex: 1 1 0; min-width: 0; height: 42px; border-radius: 5px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--card); color: var(--text); box-shadow: 0 1px 0 rgba(0,0,0,.3);
+            font: 400 23px/1 'DM Sans', sans-serif;
         }
-        .rs-k.fn { max-width: 54px; background: var(--accent-dim); font-size: 17px; }
-        .rs-k.sp { flex: 4 1 0; max-width: none; font-size: 14px; color: var(--text-3); }
-        .rs-k:active { background: var(--bg-surface); }
-        .rs-k.fn:active { background: rgba(45,106,45,0.24); }
-        .rs-k.on { background: var(--accent); color: #fff; }
+        @media (min-width: 400px) { .rs-k { height: 46px; } }
+        @media (max-height: 700px) { .rs-k { height: 40px; } .rs-kr { margin-bottom: 9px; } }
+        .rs-k.fn { background: rgba(0,0,0,.12); font-size: 20px; }
+        .rs-k.fn.down, .rs-k.fn.on { background: var(--card); }
+        .rs-k.caps { box-shadow: 0 1px 0 rgba(0,0,0,.3), inset 0 -3px 0 var(--accent); }
+        .rs-k.sp { font-size: 16px; color: var(--text-2); }
+        .rs-k.sp.down { background: rgba(0,0,0,.12); }
+        .rs-k.nx { background: var(--accent); color: #fff; font-size: 16px; font-weight: 600; }
+        .rs-k.nx.down { background: #245A24; }
+        .rs-pop {
+            position: absolute; display: none; z-index: 3; pointer-events: none;
+            justify-content: center; align-items: flex-start; padding-top: 8px;
+            background: var(--card); border-radius: 9px; box-shadow: 0 2px 10px rgba(0,0,0,.28);
+            font: 400 34px/1 'DM Sans', sans-serif; color: var(--text);
+        }
+        .rs-pop.on { display: flex; }
+        .rs-kb.trackpad .rs-k { color: transparent; background: rgba(0,0,0,.05); box-shadow: none; }
 
         /* Review */
         .rs-row {
@@ -780,6 +796,7 @@
                 <div class="rs-tick" id="rsTick" style="display:none;">&#10003;</div>
                 <h2 class="rs-h2" id="rsWaitTitle">Please wait…</h2>
                 <p class="rs-lead" id="rsWaitSub"></p>
+                <p class="rs-lead" id="rsWaitTiming" style="font-size:12px; margin-top:-8px;"></p>
                 <div class="status-msg" id="rsWaitStatus"></div>
                 <button class="btn btn-primary" id="rsRetry" style="display:none; margin-top:14px;" onclick="romansRetry()">Try again</button>
             </div>
@@ -1255,6 +1272,14 @@ async function handleLogin() {
         // Session has a Romans 13 section that is not yet submitted
         if (data.stage === 'ROMANS') { romansStart(data, isOnline, onlineCode); return; }
 
+        // Romans already submitted in this session — never again: straight into the MCQ.
+        if (data.romansDone) {
+            loginStatus.textContent = 'Romans 13 already submitted ✓ — continuing to your MCQ…';
+            loginStatus.className   = 'status-msg success';
+            setTimeout(() => startMcqDirect(data, reg, isOnline), 1000);
+            return;
+        }
+
         onVerifiedForMcq(data, reg, isOnline);
 
     } catch(err) {
@@ -1293,6 +1318,21 @@ function onVerifiedForMcq(data, reg, isOnline) {
     if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
 
     showInstructions(data);
+}
+
+// Straight into the MCQ form — after Romans 13 is submitted (the student already confirmed
+// at Romans Begin and passed the sign-in checks). Same state as onVerifiedForMcq + Start,
+// without the instructions card.
+function startMcqDirect(data, reg, isOnline) {
+    data.formUrl = xorDecode(data.encodedUrl, reg.toUpperCase());
+    verifiedData = data;
+    studentType     = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
+    assessmentType  = data.assessmentType  || assessmentType  || 'EXAM';
+    assessmentTopic = data.topic           || assessmentTopic || '';
+    if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
+    secondsLeft = EXAM_MINUTES * 60;
+    saveSession(true);   // lets a refresh reopen the form, as after Start
+    doRedirect();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1602,15 +1642,18 @@ const RM_SESSION_KEY = 'rfsRomansSession';
 const RM_TOUCH       = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 const RM_ICON_NEXT   = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 4v16l13-8L7 4z"/></svg>';
 const RM_ICON_FINISH = '<svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M4 12.5l5 5L20 6"/></svg>';
+// iPhone portrait layout; [key, width] with width in letter-key units (each row = 10).
 const RM_KB_ROWS = [
-    ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-    ['shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'back'],
-    ['hide', 'left', ',', 'space', '.', "'", 'right']
+    [['q'], ['w'], ['e'], ['r'], ['t'], ['y'], ['u'], ['i'], ['o'], ['p']],
+    [['_', 0.5], ['a'], ['s'], ['d'], ['f'], ['g'], ['h'], ['j'], ['k'], ['l'], ['_', 0.5]],
+    [['shift', 1.3], ['_', 0.2], ['z'], ['x'], ['c'], ['v'], ['b'], ['n'], ['m'], ['_', 0.2], ['back', 1.3]],
+    [['hide', 1.25], [','], ['space', 3.75], ['.'], ["'"], ['next', 2]]
 ];
-const RM_KB_LABEL = { shift: '⇧', back: '⌫', hide: '⌄', left: '◀', right: '▶', space: 'space' };
-const RM_KB_ARIA  = { shift: 'Capital letter', back: 'Delete', hide: 'Hide keyboard', left: 'Move left',
-                      right: 'Move right', space: 'Space', ',': 'Comma', '.': 'Full stop', "'": 'Apostrophe' };
+const RM_KB_LABEL = { shift: '⇧', back: '⌫', hide: '⌄', space: 'space', next: 'Next' };
+const RM_KB_ARIA  = { shift: 'Shift', back: 'Delete', hide: 'Hide keyboard', space: 'Space — hold and drag to move the cursor',
+                      next: 'Next verse', ',': 'Comma', '.': 'Full stop', "'": 'Apostrophe' };
+const RM_TIMEOUTS = { romans_save: 15000, romans_begin: 20000, romans_submit: 25000 }; // ms before a request is abandoned
+const RM_MAX_URL  = 6000;           // longest submit URL before big verses are sent first
 
 const romans = {
     active: false, started: false, submitting: false, autoSubmitted: false,
@@ -1621,18 +1664,41 @@ const romans = {
     hiddenAt: 0, remainingSec: 600, syncedAt: 0, cuesDone: {}, kbHidden: false, shift: false,
     timerId: null, autosaveId: null, retryId: null, retryMs: 0, repeatId: null, flushing: null,
     listening: false, built: false, retryAction: null, noticeId: null, lastReason: '',
-    nodeBefore: null, nodeAfter: null
+    nodeBefore: null, nodeAfter: null,
+    saved: ['', '', '', '', '', '', ''],   // text the server has confirmed, per verse
+    caps: false, lastShiftAt: 0, lastSpaceAt: 0, touches: {}, tp: null, spaceTimer: null, kbRows: null,
+    submitT0: 0
 };
 
 function rmEl(id) { return document.getElementById(id); }
 function rmSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Every call has a time limit: a stalled request fails fast and is retried instead of hanging.
 async function romansApi(action, params, keepalive) {
     let url = SCRIPT_URL + '?action=' + action + '&token=' + encodeURIComponent(SCRIPT_TOKEN);
     Object.keys(params).forEach(k => { url += '&' + k + '=' + encodeURIComponent(params[k]); });
     url += '&cb=' + Date.now();
-    const res = await fetch(url, keepalive ? { keepalive: true } : undefined);
-    return res.json();
+    const ctrl = window.AbortController ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), RM_TIMEOUTS[action] || 20000) : null;
+    const t0 = performance.now();
+    try {
+        const opts = {};
+        if (keepalive) opts.keepalive = true;
+        if (ctrl) opts.signal = ctrl.signal;
+        const res = await fetch(url, opts);
+        const data = await res.json();
+        romansNoteTiming(action, performance.now() - t0, data.serverMs);
+        return data;
+    } finally { clearTimeout(timer); }
+}
+
+// Last round-trip per action, for diagnosing slow phones (sessionStorage 'rfsRomansTimings').
+function romansNoteTiming(action, ms, serverMs) {
+    try {
+        const t = JSON.parse(sessionStorage.getItem('rfsRomansTimings') || '{}');
+        t[action] = { ms: Math.round(ms), serverMs: serverMs, at: new Date().toISOString() };
+        sessionStorage.setItem('rfsRomansTimings', JSON.stringify(t));
+    } catch (e) {}
 }
 function romansBase() { return { reg: romans.reg, key: romans.key, session: romans.session }; }
 function romansCounterParams() {
@@ -1644,7 +1710,7 @@ function romansCounterParams() {
 function romansPersist() {
     try {
         const keep = ['reg', 'key', 'session', 'mode', 'isOnline', 'onlineCode', 'name', 'firstName', 'topic', 'type',
-                      'versions', 'durationSec', 'version', 'started', 'drafts', 'dirty', 'cur', 'seq', 'counters', 'sizeStep'];
+                      'versions', 'durationSec', 'version', 'started', 'drafts', 'saved', 'dirty', 'cur', 'seq', 'counters', 'sizeStep'];
         const s = {};
         keep.forEach(k => { s[k] = romans[k]; });
         sessionStorage.setItem(RM_SESSION_KEY, JSON.stringify(s));
@@ -1738,7 +1804,10 @@ function romansShowStart() {
         'Leaving this page or pasting text is recorded for your instructor.',
         'Your writing saves as you go. When time runs out, what you have written is submitted.'
     ];
-    if (romans.mode === 'BEFORE_MCQ') rules.push('After you submit, your MCQ opens straight away.');
+    if (romans.mode === 'BEFORE_MCQ')
+        rules.push('After you submit, your MCQ opens straight away'
+            + (romans.type === 'EXAM' ? ' — you have ' + EXAM_MINUTES + ' minutes for it' : '')
+            + '. Submit the MCQ only once — a second submission scores zero.');
     rmEl('rsRules').innerHTML = '';
     rules.forEach(t => { const li = document.createElement('li'); li.textContent = t; rmEl('rsRules').appendChild(li); });
 
@@ -1797,7 +1866,10 @@ function romansEnterWriting(d, showResume) {
     if (d.finalised) return romansAfterSubmit(d.next);
     romans.version = d.version;
     // Server draft is authoritative; unsent local edits (dirty) are kept and re-sent.
-    for (let i = 0; i < RM_VERSES; i++) if (!romans.dirty[i]) romans.drafts[i] = (d.draft && d.draft[i]) || '';
+    for (let i = 0; i < RM_VERSES; i++) {
+        romans.saved[i] = (d.draft && d.draft[i]) || '';
+        if (!romans.dirty[i]) romans.drafts[i] = romans.saved[i];
+    }
     romans.seq = Math.max(romans.seq || 0, d.lastSeq || 0);
     const c = d.counters || {};
     Object.keys(romans.counters).forEach(k => { romans.counters[k] = Math.max(romans.counters[k] || 0, c[k] || 0); });
@@ -1914,6 +1986,8 @@ function romansRenderText() {
         el.appendChild(ph);
     }
     caret.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (!romans.caps) romans.shift = romansAutoCap();
+    romansPaintKeys();
 }
 
 function romansSetDraft(text) {
@@ -1924,41 +1998,172 @@ function romansSetDraft(text) {
     romansPersist();
 }
 
-// ── Our keyboard ──
+// ── Our keyboard — iPhone portrait structure and touch feel, suite colours ──
+// One handler for the whole keyboard: every point maps to the nearest key (no dead gaps),
+// keys commit on release, a letter pops up above the finger, a second finger commits the
+// first key (rollover). Shift = one capital, double-tap = caps lock; auto-capital at the
+// start of a verse and after ". "; double-space types ". "; hold delete repeats then deletes
+// words; hold the space bar and drag to move the caret; Next/Done moves on.
 function romansBuildKeyboard() {
     const kb = rmEl('rsKb');
-    RM_KB_ROWS.forEach((row, r) => {
+    romans.kbRows = [];
+    RM_KB_ROWS.forEach(row => {
         const line = document.createElement('div');
-        line.className = 'rs-kr r' + (r + 1);
-        row.forEach(k => {
-            const b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'rs-k' + (k === 'space' ? ' sp' : (k.length > 1 ? ' fn' : ''));
-            b.textContent = RM_KB_LABEL[k] || k;
-            b.dataset.k = k;
-            b.setAttribute('aria-label', RM_KB_ARIA[k] || k);
-            line.appendChild(b);
+        line.className = 'rs-kr';
+        const keys = [];
+        row.forEach(spec => {
+            const k = spec[0], grow = spec[1] || 1;
+            const el = document.createElement('div');
+            el.style.flexGrow = grow;
+            if (k === '_') { el.className = 'rs-ksp'; line.appendChild(el); return; }
+            el.className = 'rs-k' + (k === 'space' ? ' sp' : k === 'next' ? ' nx' : (k.length > 1 ? ' fn' : ''));
+            el.dataset.k = k;
+            el.setAttribute('role', 'button');
+            el.setAttribute('aria-label', RM_KB_ARIA[k] || k);
+            el.textContent = RM_KB_LABEL[k] || k;
+            line.appendChild(el);
+            keys.push(el);
         });
         kb.appendChild(line);
+        romans.kbRows.push({ el: line, keys: keys });
     });
+    const pop = document.createElement('div');
+    pop.className = 'rs-pop';
+    pop.id = 'rsPop';
+    kb.appendChild(pop);
+
     kb.addEventListener('pointerdown', e => {
-        const b = e.target.closest('.rs-k');
-        if (!b) return;
         e.preventDefault();
-        romansKey(b.dataset.k);
-        if (b.dataset.k === 'back') {
-            clearTimeout(romans.repeatId);
-            romans.repeatId = setTimeout(function repeat() { romansKey('back'); romans.repeatId = setTimeout(repeat, 60); }, 450);
-        }
+        try { kb.setPointerCapture(e.pointerId); } catch (err) { /* synthetic events */ }
+        Object.keys(romans.touches).forEach(id => romansKbRelease(Number(id), true)); // rollover
+        const key = romansKbHit(e.clientX, e.clientY);
+        if (!key) return;
+        romans.touches[e.pointerId] = { key: key };
+        romansKbPress(key, e.clientX, e.clientY, false);
     });
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => kb.addEventListener(t, () => { clearTimeout(romans.repeatId); romans.repeatId = null; }));
+    kb.addEventListener('pointermove', e => {
+        const t = romans.touches[e.pointerId];
+        if (!t) return;
+        if (romans.tp) return romansTrackpadMove(e.clientX, e.clientY);
+        const k = t.key.dataset.k;
+        if (k === 'back' || k === 'space') return;          // these don't slide off
+        const key = romansKbHit(e.clientX, e.clientY);
+        if (key && key !== t.key) { romansKbUnpress(t.key); t.key = key; romansKbPress(key, e.clientX, e.clientY, true); }
+    });
+    kb.addEventListener('pointerup', e => romansKbRelease(e.pointerId, true));
+    kb.addEventListener('pointercancel', e => romansKbRelease(e.pointerId, false));
     kb.addEventListener('contextmenu', e => e.preventDefault());
     rmEl('rsText').addEventListener('click', romansTapText);
 }
 
-function romansPaintShift() {
-    const b = rmEl('rsKb').querySelector('[data-k="shift"]');
-    if (b) b.classList.toggle('on', romans.shift);
+// Nearest row, then nearest key in it — taps in the gaps still land on a key.
+function romansKbHit(x, y) {
+    let row = null, rowD = Infinity;
+    romans.kbRows.forEach(r => {
+        const b = r.el.getBoundingClientRect();
+        const d = y < b.top ? b.top - y : (y > b.bottom ? y - b.bottom : 0);
+        if (d < rowD) { rowD = d; row = r; }
+    });
+    if (!row) return null;
+    let key = null, keyD = Infinity;
+    row.keys.forEach(k => {
+        const b = k.getBoundingClientRect();
+        const d = x < b.left ? b.left - x : (x > b.right ? x - b.right : 0);
+        if (d < keyD) { keyD = d; key = k; }
+    });
+    return key;
+}
+
+function romansKbPress(key, x, y, sliding) {
+    const k = key.dataset.k;
+    key.classList.add('down');
+    if (k.length === 1) {                                 // letter / punctuation: pop-up above the finger
+        const kb = rmEl('rsKb').getBoundingClientRect(), b = key.getBoundingClientRect(), pop = rmEl('rsPop');
+        const w = b.width + 18;
+        pop.textContent = key.textContent;
+        pop.style.width = w + 'px';
+        pop.style.height = (b.height + 50) + 'px';
+        pop.style.left = Math.max(2, Math.min(kb.width - w - 2, b.left - kb.left - 9)) + 'px';
+        pop.style.top = (b.top - kb.top - 50) + 'px';
+        pop.classList.add('on');
+    }
+    if (sliding) return;
+    if (navigator.vibrate && k.length === 1) { try { navigator.vibrate(8); } catch (err) {} }
+    if (k === 'back') {
+        romansBackspace();
+        const t0 = Date.now();
+        romans.repeatId = setTimeout(function repeat() {
+            const words = Date.now() - t0 > 1500;
+            if (words) romansDeleteWord(); else romansBackspace();
+            romans.repeatId = setTimeout(repeat, words ? 180 : 90);
+        }, 500);
+    }
+    if (k === 'space') {
+        romans.spaceTimer = setTimeout(() => {               // hold: the keyboard becomes a trackpad
+            romans.tp = { x: x, y: y, caret: romans.caret, lines: 0 };
+            rmEl('rsKb').classList.add('trackpad');
+        }, 350);
+    }
+}
+
+function romansKbUnpress(key) {
+    key.classList.remove('down');
+    rmEl('rsPop').classList.remove('on');
+}
+
+function romansKbRelease(id, commit) {
+    const t = romans.touches[id];
+    if (!t) return;
+    delete romans.touches[id];
+    const k = t.key.dataset.k;
+    romansKbUnpress(t.key);
+    if (k === 'back') { clearTimeout(romans.repeatId); romans.repeatId = null; return; }
+    if (k === 'space') {
+        clearTimeout(romans.spaceTimer);
+        if (romans.tp) { romans.tp = null; rmEl('rsKb').classList.remove('trackpad'); return; }
+    }
+    if (commit) romansKbCommit(k);
+}
+
+function romansKbCommit(k) {
+    if (!romans.active) return;
+    if (k === 'shift') return romansShiftTap();
+    if (k === 'hide') { romans.kbHidden = true; return romansLayout(); }
+    if (k === 'next') return romansNext();
+    if (k === 'space') return romansSpaceTap();
+    let ch = k;
+    if (/^[a-z]$/.test(ch) && (romans.shift || romans.caps)) ch = ch.toUpperCase();
+    romansInsert(ch);
+}
+
+function romansShiftTap() {
+    const now = Date.now();
+    if (romans.caps) { romans.caps = false; romans.shift = false; }
+    else if (romans.shift && now - romans.lastShiftAt < 350) { romans.caps = true; }
+    else romans.shift = !romans.shift;
+    romans.lastShiftAt = now;
+    romansPaintKeys();
+}
+
+// iPhone: shift switches itself on at the start of a verse and after ". "
+function romansAutoCap() {
+    const before = romans.drafts[romans.cur].slice(0, romans.caret);
+    return !before.trim() || /[.!?]\s+$/.test(before);
+}
+
+function romansPaintKeys() {
+    if (!romans.kbRows) return;
+    const upper = romans.shift || romans.caps;
+    romans.kbRows.forEach(r => r.keys.forEach(el => {
+        const k = el.dataset.k;
+        if (/^[a-z]$/.test(k)) el.textContent = upper ? k.toUpperCase() : k;
+        if (k === 'shift') {
+            el.textContent = romans.caps ? '⇪' : (romans.shift ? '⬆' : '⇧');
+            el.classList.toggle('on', romans.shift || romans.caps);
+            el.classList.toggle('caps', romans.caps);
+        }
+        if (k === 'next') el.textContent = romans.cur === RM_VERSES - 1 ? 'Done' : 'Next';
+    }));
 }
 
 function romansInsert(ch) {
@@ -1969,41 +2174,74 @@ function romansInsert(ch) {
     romansRenderText();
 }
 
-function romansKey(k) {
-    if (!romans.active) return;
-    const t = romans.drafts[romans.cur], c = romans.caret;
-    if (k === 'shift') { romans.shift = !romans.shift; return romansPaintShift(); }
-    if (k === 'hide')  { romans.kbHidden = true; return romansLayout(); }
-    if (k === 'left')  { romans.caret = Math.max(0, c - 1); return romansRenderText(); }
-    if (k === 'right') { romans.caret = Math.min(t.length, c + 1); return romansRenderText(); }
-    if (k === 'back') {
-        if (!c) return;
-        romansSetDraft(t.slice(0, c - 1) + t.slice(c));
-        romans.caret = c - 1;
+function romansSpaceTap() {
+    const t = romans.drafts[romans.cur], c = romans.caret, now = Date.now();
+    const before = t.slice(0, c);
+    if (/[A-Za-z]\s$/.test(before) && now - romans.lastSpaceAt < 450) {   // double-space → ". "
+        romansSetDraft(before.slice(0, -1) + '. ' + t.slice(c));
+        romans.caret = c + 1;
+        romans.lastSpaceAt = 0;
         return romansRenderText();
     }
-    let ch = k === 'space' ? ' ' : k;
-    // Capital for Shift, and for the first letter of an empty verse (cosmetic — marking ignores case)
-    if (/^[a-z]$/.test(ch) && (romans.shift || !t.trim())) ch = ch.toUpperCase();
-    if (romans.shift) { romans.shift = false; romansPaintShift(); }
-    romansInsert(ch);
+    romans.lastSpaceAt = now;
+    romansInsert(' ');
+}
+
+function romansBackspace() {
+    const t = romans.drafts[romans.cur], c = romans.caret;
+    if (!c) return;
+    romansSetDraft(t.slice(0, c - 1) + t.slice(c));
+    romans.caret = c - 1;
+    romansRenderText();
+}
+
+function romansDeleteWord() {
+    const t = romans.drafts[romans.cur], c = romans.caret;
+    if (!c) return;
+    const m = /\S*\s*$/.exec(t.slice(0, c));
+    const n = Math.max(1, m ? m[0].length : 1);
+    romansSetDraft(t.slice(0, c - n) + t.slice(c));
+    romans.caret = c - n;
+    romansRenderText();
+}
+
+// Space-bar trackpad: ~12px per character sideways, one ruled line per line height up/down.
+function romansTrackpadMove(x, y) {
+    const tp = romans.tp;
+    const lh = RM_SIZES[romans.sizeStep] * 2;
+    const lines = Math.round((y - tp.y) / lh);
+    if (lines !== tp.lines) {
+        const c = rmEl('rsText').querySelector('.rs-caret').getBoundingClientRect();
+        const pos = romansCaretAtPoint(c.left + 1, c.top + c.height / 2 + (lines - tp.lines) * lh);
+        if (pos !== null) { tp.caret = pos; tp.x = x; }
+        tp.lines = lines;
+    }
+    const len = romans.drafts[romans.cur].length;
+    romans.caret = Math.max(0, Math.min(len, tp.caret + Math.round((x - tp.x) / 12)));
+    romansRenderText();
+}
+
+// Character index under a point in the writing surface, or null if not on the text.
+function romansCaretAtPoint(x, y) {
+    let node = null, offset = 0;
+    if (document.caretPositionFromPoint) {
+        const p = document.caretPositionFromPoint(x, y);
+        if (p) { node = p.offsetNode; offset = p.offset; }
+    } else if (document.caretRangeFromPoint) {
+        const r = document.caretRangeFromPoint(x, y);
+        if (r) { node = r.startContainer; offset = r.startOffset; }
+    }
+    if (node === romans.nodeBefore) return offset;
+    if (node === romans.nodeAfter) return romans.nodeBefore.length + offset;
+    return null;
 }
 
 // Tap the page: bring the keyboard back and put the caret where the finger landed.
 function romansTapText(e) {
     if (!romans.active) return;
     if (romans.kbHidden) { romans.kbHidden = false; romansLayout(); }
-    let node = null, offset = 0;
-    if (document.caretPositionFromPoint) {
-        const p = document.caretPositionFromPoint(e.clientX, e.clientY);
-        if (p) { node = p.offsetNode; offset = p.offset; }
-    } else if (document.caretRangeFromPoint) {
-        const r = document.caretRangeFromPoint(e.clientX, e.clientY);
-        if (r) { node = r.startContainer; offset = r.startOffset; }
-    }
-    if (node === romans.nodeBefore) romans.caret = offset;
-    else if (node === romans.nodeAfter) romans.caret = romans.nodeBefore.length + offset;
-    else romans.caret = romans.drafts[romans.cur].length;
+    const pos = romansCaretAtPoint(e.clientX, e.clientY);
+    romans.caret = pos === null ? romans.drafts[romans.cur].length : pos;
     romansRenderText();
 }
 
@@ -2014,8 +2252,10 @@ function romansHardwareKey(e) {
         if (e.key.toLowerCase() === 'v') { e.preventDefault(); romansCountPaste(); }
         return;
     }
-    const map = { Backspace: 'back', ArrowLeft: 'left', ArrowRight: 'right' };
-    if (map[e.key]) { e.preventDefault(); return romansKey(map[e.key]); }
+    const len = romans.drafts[romans.cur].length;
+    if (e.key === 'Backspace') { e.preventDefault(); return romansBackspace(); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); romans.caret = Math.max(0, romans.caret - 1); return romansRenderText(); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); romans.caret = Math.min(len, romans.caret + 1); return romansRenderText(); }
     if (e.key.length === 1) { e.preventDefault(); romansInsert(e.key); }
 }
 
@@ -2079,7 +2319,7 @@ function romansFlush(keepalive, skip) {
         while (romans.active) {
             const keys = Object.keys(romans.dirty).map(Number).filter(i => i !== skip);
             if (!keys.length) break;
-            const i = keys[0];
+            const i = keys[0], text = romans.drafts[i];
             delete romans.dirty[i];
             romans.seq++;
             romansPersist();
@@ -2087,7 +2327,7 @@ function romansFlush(keepalive, skip) {
             let d;
             try {
                 d = await romansApi('romans_save', Object.assign(romansBase(),
-                    { v: i + 1, text: romans.drafts[i], seq: romans.seq }, romansCounterParams()), keepalive);
+                    { v: i + 1, text: text, seq: romans.seq }, romansCounterParams()), keepalive);
             } catch (e) {
                 romans.dirty[i] = true;
                 romansSetSave(navigator.onLine === false ? 'offline' : 'retry');
@@ -2096,6 +2336,7 @@ function romansFlush(keepalive, skip) {
             }
             if (d.status === 'success') {
                 if (d.stale) { romans.seq = Math.max(romans.seq, d.seq || 0); romans.dirty[i] = true; }
+                else romans.saved[i] = text;
                 romansSync(d.remainingSec);
                 continue;
             }
@@ -2208,7 +2449,7 @@ function romansNotice(msg) {
     romans.noticeId = setTimeout(() => n.classList.remove('show'), 4000);
 }
 
-// ── Submit: one request (the verse on screen travels with it); marking happens later ──
+// ── Submit: one request carrying every unsent verse; never waits on an autosave; marking is later ──
 async function romansSubmit(reason) {
     if (romans.submitting) return;
     romans.submitting = true;
@@ -2216,41 +2457,60 @@ async function romansSubmit(reason) {
     if (reason === 'AUTO') romans.autoSubmitted = true;
     romansCapture();
     romansConfirmClose();
+    rmEl('rsNote').classList.remove('show');
     clearInterval(romans.timerId);
     clearInterval(romans.autosaveId);
     clearTimeout(romans.retryId); romans.retryId = null;
-    romansShowWait('Submitting…', reason === 'AUTO' ? 'Time is up. Sending what you have written…' : 'Please keep this page open.');
-    // Other unsent verses go first (usually none — autosave keeps up).
-    const others = () => Object.keys(romans.dirty).map(Number).filter(i => i !== romans.cur);
-    for (let n = 0; n < 3 && others().length; n++) {
-        await romansFlush(false, romans.cur);
-        if (others().length) await rmSleep(1500);
-    }
-    romans.active = false;
+    romansShowWait('Submitting…', reason === 'AUTO' ? 'Time is up. Sending what you have written…' : 'Sending your answers…');
+    romans.active = false;     // stops autosave; a save still in flight is not waited for
+    romans.submitT0 = performance.now();
     if (reason === 'AUTO') await rmSleep(Math.random() * 3000); // spread a class's auto-submits
-    romans.seq++;
+    romans.seq += 2;           // beyond any save still in flight
+    await romansShrinkSubmit();
     romansPersist();
     romansSubmitCall();
+}
+
+// Verses whose text the server has not confirmed yet travel as d1..d7.
+function romansSubmitParams() {
+    const p = Object.assign(romansBase(), { reason: romans.lastReason || 'MANUAL', seq: romans.seq }, romansCounterParams());
+    for (let i = 0; i < RM_VERSES; i++) if (romans.drafts[i] !== romans.saved[i]) p['d' + (i + 1)] = romans.drafts[i];
+    return p;
+}
+
+// Keep the submit URL short: if many long verses are unsent, send the biggest ones first.
+async function romansShrinkSubmit() {
+    const urlLen = p => Object.keys(p).reduce((n, k) => n + k.length + 2 + encodeURIComponent(p[k]).length, SCRIPT_URL.length);
+    for (let guard = 0; guard < RM_VERSES && urlLen(romansSubmitParams()) > RM_MAX_URL; guard++) {
+        const pending = romans.drafts.map((t, i) => i).filter(i => romans.drafts[i] !== romans.saved[i])
+            .sort((a, b) => romans.drafts[b].length - romans.drafts[a].length);
+        const i = pending[0], text = romans.drafts[i];
+        try {
+            const d = await romansApi('romans_save', Object.assign(romansBase(), { v: i + 1, text: text, seq: romans.seq }, romansCounterParams()));
+            if (d.status !== 'success' || d.stale) break;
+            romans.saved[i] = text;
+            romans.seq += 1;
+        } catch (e) { break; }
+    }
 }
 
 async function romansSubmitCall() {
     romans.retryAction = romansSubmitCall;
     rmEl('rsRetry').style.display = 'none';
-    const params = Object.assign(romansBase(), { reason: romans.lastReason || 'MANUAL',
-        v: romans.cur + 1, text: romans.drafts[romans.cur], seq: romans.seq }, romansCounterParams());
-    let delay = 2000;
-    for (let attempt = 0; attempt < 6; attempt++) {
+    romansStatus('rsWaitStatus', '');
+    const waits = [1000, 2000, 4000];
+    for (let attempt = 0; attempt <= waits.length; attempt++) {
         try {
-            const d = await romansApi('romans_submit', params);
+            const d = await romansApi('romans_submit', romansSubmitParams());
             if (d.status === 'success') return romansAfterSubmit(d.next, d.mcq);
             if (d.code === 'KEY_INVALID' || d.code === 'NOT_STARTED') return romansHandleError(d, 'rsWaitStatus');
             if (!d.code && d.message) return romansShowRetry(d.message);   // e.g. MCQ already submitted
-        } catch (e) { /* network — retry */ }
-        rmEl('rsWaitSub').textContent = 'Connection problem — retrying…';
-        await rmSleep(delay + Math.random() * 1000);
-        delay = Math.min(30000, delay * 2);
+        } catch (e) { /* network or timeout — retry */ }
+        if (attempt === waits.length) break;
+        rmEl('rsWaitSub').textContent = 'Still sending — keep this page open…';
+        await rmSleep(waits[attempt]);
     }
-    romansShowRetry('We could not reach the server. Your saved answers are safe — tap Try again. If time has run out, your saved answers still count.');
+    romansShowRetry('Your answers are safe on this phone. Check your connection and tap Try again. If time has run out, what the server already has still counts.');
 }
 
 function romansAfterSubmit(next, mcq) {
@@ -2258,14 +2518,19 @@ function romansAfterSubmit(next, mcq) {
     clearInterval(romans.timerId);
     clearInterval(romans.autosaveId);
     romansClearPersist();
+    const secs = romans.submitT0 ? ((performance.now() - romans.submitT0) / 1000).toFixed(1) : '';
+    rmEl('rsWaitTiming').textContent = secs ? 'Sent in ' + secs + ' s' : '';
+    romansNoteTiming('submit_total', secs * 1000);
     const autoNote = romans.autoSubmitted ? 'Time is up, so your answers were submitted automatically. ' : '';
     if (next === 'DONE') return romansShowDone('Romans 13 submitted', autoNote + 'Your answers are recorded. You are done.');
-    romansShowDone('Romans 13 submitted', autoNote + 'Taking you to the MCQ…');
-    if (mcq && mcq.encodedUrl) {
-        setTimeout(() => { romansStageOn(false); onVerifiedForMcq(mcq, romans.reg, romans.isOnline); }, 1200);
-        return;
-    }
+    romansShowDone('Submission successful', autoNote + 'Loading your MCQ questions…');
+    if (mcq && mcq.encodedUrl) { setTimeout(() => romansOpenMcq(mcq), 1000); return; }
     romansHandoff();
+}
+
+function romansOpenMcq(data) {
+    startMcqDirect(data, romans.reg, romans.isOnline);
+    romansStageOn(false);
 }
 
 // Fallback when the submit reply carried no MCQ link: sign in again (still the single gate).
@@ -2282,13 +2547,13 @@ async function romansHandoff() {
         const data = await (await fetch(buildVerifyUrl(romans.reg, romans.isOnline, romans.onlineCode))).json();
         if (data.status !== 'success') return romansShowRetry(data.message || 'Could not open the MCQ. Tap Try again.');
         if (data.stage === 'ROMANS') return romansStart(data, romans.isOnline, romans.onlineCode);
-        romansStageOn(false);
-        onVerifiedForMcq(data, romans.reg, romans.isOnline);
+        romansOpenMcq(data);
     } catch (e) { romansShowRetry('Connection error — check your internet and tap Try again.'); }
 }
 
 // ── Shared states ──
 function romansShowWait(title, sub) {
+    if (title !== 'Submission successful' && title !== 'Romans 13 submitted') rmEl('rsWaitTiming').textContent = '';
     rmEl('rsSpinner').style.display = 'block';
     rmEl('rsTick').style.display = 'none';
     rmEl('rsWaitTitle').textContent = title;
