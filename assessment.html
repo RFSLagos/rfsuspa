@@ -403,6 +403,57 @@
         /* ── Online session code field (instructions screen) ── */
         .online-session-wrap { display: none; margin-bottom: 16px; }
         .online-session-wrap.show { display: block; }
+
+        /* ════ ROMANS STAGE — Romans 13:1-7 written section ════ */
+        body.rm-writing { justify-content: flex-start; padding-top: 12px; }
+        /* Keyboard open while writing: drop the card header so the verse box and Back/Next fit */
+        body.rm-writing.rm-kb { padding-top: 0; }
+        body.rm-writing.rm-kb .card-header { display: none; }
+        .rm-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+        .rm-sub   { font-size: 13px; color: var(--text-3); margin-bottom: 16px; line-height: 1.5; }
+        .rm-select {
+            width: 100%; height: 46px; padding: 0 12px;
+            background: var(--bg-surface); border: 1.5px solid var(--border); border-radius: var(--r-sm);
+            font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text); outline: none;
+        }
+        .rm-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+        .rm-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+        .rm-verse-label { font-size: 15px; font-weight: 700; color: var(--text); }
+        .rm-progress    { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+        .rm-timer {
+            font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500;
+            color: var(--gold); background: var(--gold-dim); padding: 4px 10px; border-radius: 6px;
+        }
+        .rm-timer.urgent { color: var(--error-text); background: var(--error-bg); }
+        .rm-notice { font-size: 11px; color: var(--text-3); margin-bottom: 8px; }
+        .rm-textarea {
+            display: block; width: 100%; height: 38vh; min-height: 110px; resize: none;
+            padding: 12px 14px; background: var(--bg-surface);
+            border: 1.5px solid var(--border); border-radius: var(--r-sm);
+            font-family: 'DM Sans', sans-serif; font-size: 17px; line-height: 1.6; color: var(--text);
+            outline: none; -webkit-appearance: none;
+        }
+        .rm-textarea:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-dim); }
+        .rm-save { font-size: 11px; color: var(--text-3); min-height: 16px; margin-top: 4px; text-align: right; }
+        .rm-save.bad { color: var(--error-text); font-weight: 600; }
+        .rm-nav { display: flex; gap: 10px; margin-top: 8px; }
+        .rm-nav .btn { flex: 1; }
+        .rm-nav.stack { flex-direction: column; }
+        .btn-plain { background: var(--bg-surface); color: var(--text-2); border: 1.5px solid var(--border); }
+        .rm-row {
+            display: flex; gap: 12px; width: 100%; text-align: left;
+            background: none; border: 0; border-bottom: 1px solid var(--border);
+            padding: 12px 0; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--text);
+        }
+        .rm-row b    { color: var(--accent); min-width: 22px; font-size: 15px; }
+        .rm-row span { flex: 1; font-size: 14px; line-height: 1.45; overflow: hidden;
+                       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .rm-row em   { color: var(--error-text); font-style: normal; font-weight: 600; }
+        .rm-confirm {
+            display: none; background: var(--gold-dim); border-radius: var(--r-sm);
+            padding: 12px 14px; margin-top: 14px; font-size: 13px; color: var(--text-2); line-height: 1.5;
+        }
+        .rm-confirm.show { display: block; }
         .online-badge {
             display: inline-flex; align-items: center; gap: 6px;
             background: #E6F1FB; color: #185FA5;
@@ -522,6 +573,87 @@
             </button>
         </div>
     </div>
+
+    <!-- ════ ROMANS STAGE — screens (Romans 13:1-7 written section) ════ -->
+    <div class="screen" id="screenRomansStart">
+        <div class="card-body">
+            <div class="welcome-strip">
+                <div class="welcome-avatar" id="rmAvatar">?</div>
+                <div>
+                    <div class="welcome-name" id="rmName">Welcome!</div>
+                    <div class="welcome-reg"  id="rmReg"></div>
+                </div>
+            </div>
+            <div class="rm-title">Romans 13:1–7</div>
+            <div class="rm-sub">Write each verse from memory, one verse at a time.</div>
+            <div class="instructions-box">
+                <div class="instructions-title">Before you begin</div>
+                <div class="instructions-list" id="rmRules"></div>
+            </div>
+            <div class="field">
+                <label for="rmVersion">Bible version</label>
+                <select id="rmVersion" class="rm-select"></select>
+                <span class="hint" id="rmVersionHint">Choose the version you memorised.</span>
+            </div>
+            <label class="confirm-wrap">
+                <input type="checkbox" id="rmConfirm" onchange="romansUpdateBegin()">
+                <span class="confirm-label">I will write from memory. I confirm this attempt is mine alone.</span>
+            </label>
+            <button class="btn btn-gold" id="rmBeginBtn" onclick="romansBegin()" disabled>Begin</button>
+            <div class="status-msg" id="rmStartStatus"></div>
+        </div>
+    </div>
+
+    <div class="screen" id="screenRomansWrite">
+        <div class="card-body">
+            <div class="rm-top">
+                <div>
+                    <div class="rm-verse-label" id="rmVerseLabel">Verse 1 of 7</div>
+                    <div class="rm-progress" id="rmProgress">0 of 7 written</div>
+                </div>
+                <span class="rm-timer" id="rmTimer">10:00</span>
+            </div>
+            <div class="rm-notice">Leaving this page or pasting is recorded for your instructor.</div>
+            <textarea id="rmText" class="rm-textarea" maxlength="600" aria-label="Your verse"
+                      autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"></textarea>
+            <div class="rm-save" id="rmSave"></div>
+            <div class="rm-nav" id="rmNav">
+                <button class="btn btn-plain" id="rmBack" onclick="romansGo(romans.cur - 1, true)">Back</button>
+                <button class="btn btn-primary" id="rmNext" onclick="romansNext()">Next</button>
+            </div>
+            <div class="status-msg" id="rmWriteStatus"></div>
+        </div>
+    </div>
+
+    <div class="screen" id="screenRomansReview">
+        <div class="card-body">
+            <div class="rm-top">
+                <div class="rm-verse-label">Review your verses</div>
+                <span class="rm-timer" id="rmTimer2">10:00</span>
+            </div>
+            <div class="rm-sub" style="margin-bottom:4px;">Tap a verse to change it.</div>
+            <div id="rmRows"></div>
+            <div class="rm-confirm" id="rmConfirmBox"></div>
+            <div class="rm-nav stack" style="margin-top:14px;">
+                <button class="btn btn-gold" id="rmSubmitBtn" onclick="romansSubmitTap()">Submit Romans 13</button>
+                <button class="btn btn-plain" onclick="romansGo(romans.cur, false)">Keep writing</button>
+            </div>
+            <div class="status-msg" id="rmReviewStatus"></div>
+        </div>
+    </div>
+
+    <div class="screen" id="screenRomansDone">
+        <div class="card-body">
+            <div class="redirect-wrap">
+                <div class="redirect-spinner" id="rmDoneSpinner"></div>
+                <div class="redirect-title" id="rmDoneTitle">Please wait…</div>
+                <div class="redirect-sub" id="rmDoneSub"></div>
+                <div class="status-msg" id="rmDoneStatus"></div>
+                <button class="btn btn-primary" id="rmRetryBtn" style="display:none; margin-top:14px;" onclick="romansRetry()">Try again</button>
+            </div>
+        </div>
+    </div>
+    <!-- ════ END ROMANS STAGE — screens ════ -->
 
     <!-- Screen 3: Loading (briefly shown before iframe overlay appears) -->
     <div class="screen" id="screenRedirect">
@@ -980,16 +1112,7 @@ async function handleLogin() {
         }
 
         // ── Step 2: Verify exam credentials + consume the code ──
-        const url = SCRIPT_URL
-            + '?action=verify_assessment'
-            + '&token='    + encodeURIComponent(SCRIPT_TOKEN)
-            + '&reg='      + encodeURIComponent(reg)
-            + '&isOnline=' + (isOnline ? 'true' : 'false')
-            + '&lat='      + (userLocation ? userLocation.latitude  : '')
-            + '&lng='      + (userLocation ? userLocation.longitude : '')
-            + '&cb='       + Date.now();
-
-        const response = await fetch(url);
+        const response = await fetch(buildVerifyUrl(reg, isOnline, onlineCode));
         const data     = await response.json();
 
         if (data.status !== 'success') {
@@ -999,25 +1122,47 @@ async function handleLogin() {
             return;
         }
 
-        data.formUrl = xorDecode(data.encodedUrl, reg.toUpperCase());
-        verifiedData = data;
-        studentType     = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
-        assessmentType  = data.assessmentType  || assessmentType  || 'EXAM';
-        assessmentTopic = data.topic           || assessmentTopic || '';
+        // Session has a Romans 13 section that is not yet submitted
+        if (data.stage === 'ROMANS') { romansStart(data, isOnline, onlineCode); return; }
 
-        // Save session so a refresh/reload can restore it
-        saveSession();
-
-        // Stop background polling — no longer needed once verified
-        if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
-
-        showInstructions(data);
+        onVerifiedForMcq(data, reg, isOnline);
 
     } catch(err) {
         loginStatus.textContent = 'Connection error — please check your internet and try again.';
         loginStatus.className   = 'status-msg error';
         resetBtn();
     }
+}
+
+// The code is only checked by the server when the session has a Romans section.
+function buildVerifyUrl(reg, isOnline, onlineCode) {
+    return SCRIPT_URL
+        + '?action=verify_assessment'
+        + '&token='    + encodeURIComponent(SCRIPT_TOKEN)
+        + '&reg='      + encodeURIComponent(reg)
+        + '&isOnline=' + (isOnline ? 'true' : 'false')
+        + '&code='     + encodeURIComponent(onlineCode || '')
+        + '&lat='      + (userLocation ? userLocation.latitude  : '')
+        + '&lng='      + (userLocation ? userLocation.longitude : '')
+        + '&cb='       + Date.now();
+}
+
+// Verified for the MCQ Form: decode the URL and show the instructions screen.
+// Also used after a BEFORE_MCQ Romans section hands off to the MCQ.
+function onVerifiedForMcq(data, reg, isOnline) {
+    data.formUrl = xorDecode(data.encodedUrl, reg.toUpperCase());
+    verifiedData = data;
+    studentType     = isOnline ? 'ONLINE' : (data.studentType || 'PHYSICAL');
+    assessmentType  = data.assessmentType  || assessmentType  || 'EXAM';
+    assessmentTopic = data.topic           || assessmentTopic || '';
+
+    // Save session so a refresh/reload can restore it
+    saveSession();
+
+    // Stop background polling — no longer needed once verified
+    if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
+
+    showInstructions(data);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1307,12 +1452,564 @@ function showSubmitted() {
     document.getElementById('submittedScreen').classList.add('active');
 }
 
+// ════════════════════════════════════════════════════════════
+//  ═══ ROMANS STAGE ═══  Romans 13:1-7 written section
+//  The server owns the clock, the draft and the marking. This page
+//  shows one verse at a time, autosaves one verse per request, and
+//  records leave/paste evidence (log only — never blocks or fails).
+//  Flow: verify_assessment -> romans_begin -> romans_save -> romans_submit
+//        then BEFORE_MCQ re-verifies into the existing MCQ flow.
+// ════════════════════════════════════════════════════════════
+const RM_VERSES         = 7;
+const RM_AUTOSAVE_MS    = 20000;
+const RM_BIG_INSERT     = 4;      // words added by one input event -> logged as a large insert
+const RM_SESSION_KEY    = 'rfsRomansSession';
+
+const romans = {
+    active: false, started: false, submitting: false, autoSubmitted: false,
+    reg: '', key: '', session: '', mode: '', isOnline: false, onlineCode: '',
+    name: '', firstName: '', topic: '', type: '', versions: [], durationSec: 600, version: '',
+    drafts: ['', '', '', '', '', '', ''], dirty: {}, cur: 0, seq: 0,
+    counters: { leaves: 0, leaveSec: 0, pastes: 0, bigInserts: 0, split: 0 },
+    hiddenAt: 0, remainingSec: 600, syncedAt: 0,
+    timerId: null, autosaveId: null, retryId: null, retryMs: 0, flushing: null,
+    listening: false, retryAction: null, noticeId: null
+};
+
+function rmEl(id) { return document.getElementById(id); }
+function rmSleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function romansApi(action, params, keepalive) {
+    let url = SCRIPT_URL + '?action=' + action + '&token=' + encodeURIComponent(SCRIPT_TOKEN);
+    Object.keys(params).forEach(k => { url += '&' + k + '=' + encodeURIComponent(params[k]); });
+    url += '&cb=' + Date.now();
+    const res = await fetch(url, keepalive ? { keepalive: true } : undefined);
+    return res.json();
+}
+function romansBase() { return { reg: romans.reg, key: romans.key, session: romans.session }; }
+
+// ── Persistence (survives refresh; closing the tab clears it and the student signs in again) ──
+function romansPersist() {
+    try {
+        const keep = ['reg', 'key', 'session', 'mode', 'isOnline', 'onlineCode', 'name', 'firstName', 'topic', 'type',
+                      'versions', 'durationSec', 'version', 'started', 'drafts', 'dirty', 'cur', 'seq', 'counters'];
+        const s = {};
+        keep.forEach(k => { s[k] = romans[k]; });
+        sessionStorage.setItem(RM_SESSION_KEY, JSON.stringify(s));
+    } catch (e) { /* sessionStorage unavailable — server still has the draft */ }
+}
+function romansClearPersist() { try { sessionStorage.removeItem(RM_SESSION_KEY); } catch (e) {} }
+
+function romansRestore() {
+    let s = null;
+    try { s = JSON.parse(sessionStorage.getItem(RM_SESSION_KEY) || 'null'); } catch (e) {}
+    if (!s || !s.key) return false;
+    Object.assign(romans, s);
+    romansSetHeader();
+    startLocation(); // physical students need GPS again for the MCQ hand-off
+    if (romans.started) romansResume();
+    else romansShowStart();
+    return true;
+}
+
+function romansSetHeader() {
+    assessmentType  = romans.type  || assessmentType;
+    assessmentTopic = romans.topic || assessmentTopic;
+    rmEl('assessmentTitle').textContent = assessmentTopic || 'Assessment';
+    const badge = rmEl('assessmentTypeBadge');
+    badge.textContent = assessmentType || '';
+    badge.style.display = assessmentType ? 'inline-block' : 'none';
+}
+
+// ── Entry from verify_assessment (stage ROMANS) ──
+function romansStart(data, isOnline, onlineCode) {
+    Object.assign(romans, {
+        reg: data.regNumber, key: data.attemptKey, session: data.session, mode: data.romansMode,
+        isOnline: !!isOnline, onlineCode: onlineCode || '', name: data.name, firstName: data.firstName,
+        topic: data.topic, type: data.assessmentType, versions: data.versions || [],
+        durationSec: data.durationSec || 600
+    });
+    if (examOpenPoller) { clearInterval(examOpenPoller); examOpenPoller = null; }
+    romansSetHeader();
+    romansPersist();
+    if (data.attemptState === 'IN_PROGRESS') { romans.started = true; romansPersist(); romansResume(); }
+    else romansShowStart();
+}
+
+function romansShowStart() {
+    const initials = romans.firstName
+        ? (romans.firstName.charAt(0) + (romans.name.split(' ').pop() || '').charAt(0)).toUpperCase()
+        : (romans.name || '?').substring(0, 2).toUpperCase();
+    rmEl('rmAvatar').textContent = initials;
+    rmEl('rmName').textContent   = 'Welcome, ' + romans.name + '!';
+    rmEl('rmReg').textContent    = romans.reg;
+
+    const mins = Math.round(romans.durationSec / 60);
+    const rules = [
+        'You have <strong>' + mins + ' minutes</strong>, counted from when you tap Begin. The clock keeps running if you leave or close this page.',
+        'Write from memory. <strong>Leaving this page or pasting text is recorded</strong> for your instructor.',
+        'Your writing saves as you go. When time runs out, what you have written is submitted automatically.'
+    ];
+    if (romans.mode === 'BEFORE_MCQ') rules.push('After you submit, your MCQ opens straight away.');
+    rmEl('rmRules').innerHTML = rules.map((t, i) =>
+        '<div class="inst-row"><div class="inst-num">' + (i + 1) + '</div><div class="inst-text">' + t + '</div></div>').join('');
+
+    const sel = rmEl('rmVersion');
+    sel.innerHTML = '';
+    romans.versions.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.id; o.textContent = v.label;
+        sel.appendChild(o);
+    });
+    rmEl('rmVersionHint').textContent = romans.versions.length > 2
+        ? 'Choose the version you memorised.'
+        : 'Choose "Other" only if you memorised a different version — it will be marked by hand.';
+
+    rmEl('rmConfirm').checked = false;
+    rmEl('rmBeginBtn').disabled = true;
+    rmEl('rmBeginBtn').textContent = 'Begin';
+    rmEl('rmStartStatus').className = 'status-msg';
+    showScreen('screenRomansStart');
+}
+
+function romansUpdateBegin() { rmEl('rmBeginBtn').disabled = !rmEl('rmConfirm').checked; }
+
+function romansStatus(id, msg, ok) {
+    const el = rmEl(id);
+    el.textContent = msg || '';
+    el.className = 'status-msg' + (msg ? (ok ? ' success' : ' error') : '');
+}
+
+async function romansBegin() {
+    const btn = rmEl('rmBeginBtn');
+    btn.disabled = true; btn.textContent = 'Starting…';
+    romansStatus('rmStartStatus', '');
+    try {
+        const d = await romansApi('romans_begin', Object.assign(romansBase(), { version: rmEl('rmVersion').value }));
+        if (d.status !== 'success') { btn.disabled = false; btn.textContent = 'Begin'; return romansHandleError(d, 'rmStartStatus'); }
+        romans.started = true;
+        romansEnterWriting(d);
+    } catch (e) {
+        btn.disabled = false; btn.textContent = 'Begin';
+        romansStatus('rmStartStatus', 'Connection error — please check your internet and try again.');
+    }
+}
+
+// Resume after refresh, or after signing in again on this or another device.
+async function romansResume() {
+    romansShowWait('Resuming your Romans 13…', 'Your clock kept running while you were away.');
+    romans.retryAction = romansResume;
+    try {
+        const d = await romansApi('romans_begin', romansBase());
+        if (d.status !== 'success') return romansHandleError(d, 'rmDoneStatus');
+        romansEnterWriting(d);
+    } catch (e) { romansShowRetry('Connection error — check your internet and tap Try again.'); }
+}
+
+function romansEnterWriting(d) {
+    if (d.finalised) return romansAfterSubmit(d.next);
+    romans.version = d.version;
+    // Server draft is authoritative; unsent local edits (dirty) are kept and re-sent.
+    for (let i = 0; i < RM_VERSES; i++) if (!romans.dirty[i]) romans.drafts[i] = (d.draft && d.draft[i]) || '';
+    romans.seq = Math.max(romans.seq || 0, d.lastSeq || 0);
+    const c = d.counters || {};
+    Object.keys(romans.counters).forEach(k => { romans.counters[k] = Math.max(romans.counters[k] || 0, c[k] || 0); });
+    romansSync(d.remainingSec);
+    romans.active = true;
+    romans.submitting = false;
+    romansAttachListeners();
+    document.body.classList.add('rm-writing');
+    clearInterval(romans.timerId);
+    clearInterval(romans.autosaveId);
+    romans.timerId    = setInterval(romansTick, 500);
+    romans.autosaveId = setInterval(() => { romansCapture(); romansFlush(); }, RM_AUTOSAVE_MS);
+    romansTick();
+    romansCheckSplit();
+    rmEl('rmText').value = romans.drafts[romans.cur || 0]; // so romansGo's capture keeps the restored draft
+    romansGo(romans.cur || 0, false);
+}
+
+// ── Timer (display only — the server enforces the deadline) ──
+function romansSync(remainingSec) {
+    if (typeof remainingSec !== 'number') return;
+    romans.remainingSec = remainingSec;
+    romans.syncedAt = performance.now();
+}
+function romansTick() {
+    const left = Math.max(0, Math.round(romans.remainingSec - (performance.now() - romans.syncedAt) / 1000));
+    const txt = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+    ['rmTimer', 'rmTimer2'].forEach(id => {
+        rmEl(id).textContent = txt;
+        rmEl(id).className = 'rm-timer' + (left <= 60 ? ' urgent' : '');
+    });
+    if (left <= 0 && romans.active && !romans.submitting) romansSubmit('AUTO');
+}
+
+// ── Writing screen ──
+function romansCapture() {
+    if (!romans.active) return;
+    const v = rmEl('rmText').value;
+    if (v !== romans.drafts[romans.cur]) { romans.drafts[romans.cur] = v; romans.dirty[romans.cur] = true; }
+}
+
+function romansGo(i, keepKeyboard) {
+    romansCapture();
+    romans.cur = Math.max(0, Math.min(RM_VERSES - 1, i));
+    const ta = rmEl('rmText');
+    ta.value = romans.drafts[romans.cur];
+    ta.placeholder = 'Type verse ' + (romans.cur + 1) + ' here';
+    rmEl('rmVerseLabel').textContent = 'Verse ' + (romans.cur + 1) + ' of ' + RM_VERSES;
+    rmEl('rmBack').disabled = romans.cur === 0;
+    rmEl('rmNext').textContent = romans.cur === RM_VERSES - 1 ? 'Submit' : 'Next';
+    rmEl('rmConfirmBox').classList.remove('show');
+    romansPaintProgress();
+    showScreen('screenRomansWrite');
+    if (keepKeyboard) ta.focus();
+    romansFlush();
+    romansPersist();
+}
+
+function romansNext() {
+    if (romans.cur < RM_VERSES - 1) romansGo(romans.cur + 1, true);
+    else romansReview();
+}
+
+function romansPaintProgress() {
+    const n = romans.drafts.filter(t => t.trim()).length;
+    rmEl('rmProgress').textContent = n + ' of ' + RM_VERSES + ' written';
+}
+
+function romansReview() {
+    romansCapture();
+    const rows = rmEl('rmRows');
+    rows.innerHTML = '';
+    romans.drafts.forEach((t, i) => {
+        const b = document.createElement('button');
+        b.className = 'rm-row';
+        const n = document.createElement('b'); n.textContent = i + 1;
+        const s = document.createElement('span');
+        if (t.trim()) s.textContent = t;
+        else { const em = document.createElement('em'); em.textContent = 'Nothing written yet'; s.appendChild(em); }
+        b.append(n, s);
+        b.onclick = () => romansGo(i, false);
+        rows.appendChild(b);
+    });
+    rmEl('rmConfirmBox').classList.remove('show');
+    rmEl('rmSubmitBtn').textContent = 'Submit Romans 13';
+    rmEl('rmSubmitBtn').disabled = false;
+    romansStatus('rmReviewStatus', '');
+    if (document.activeElement) document.activeElement.blur();
+    showScreen('screenRomansReview');
+    romansFlush();
+    romansPersist();
+}
+
+// First tap shows what submitting means; second tap submits.
+function romansSubmitTap() {
+    const box = rmEl('rmConfirmBox');
+    if (!box.classList.contains('show')) {
+        const empty = romans.drafts.filter(t => !t.trim()).length;
+        box.innerHTML = (empty ? '<strong>' + empty + (empty > 1 ? ' verses are' : ' verse is') + ' still empty.</strong> ' : '')
+            + "You can't come back to this section after submitting."
+            + (romans.mode === 'BEFORE_MCQ' ? ' Your MCQ opens straight after.' : '');
+        box.classList.add('show');
+        rmEl('rmSubmitBtn').textContent = 'Yes, submit Romans 13';
+        return;
+    }
+    rmEl('rmSubmitBtn').disabled = true;
+    romansSubmit('MANUAL');
+}
+
+// ── Autosave: one verse per request, one request at a time ──
+function romansSetSave(state) {
+    const el = rmEl('rmSave');
+    const text = {
+        saving:  'Saving…',
+        saved:   'Saved',
+        retry:   'Not saved yet — retrying. Keep writing.',
+        offline: 'Offline — your writing is kept on this device. Reconnect to save.'
+    }[state] || '';
+    el.textContent = text;
+    el.className = 'rm-save' + (state === 'retry' || state === 'offline' ? ' bad' : '');
+}
+
+function romansFlush(keepalive) {
+    if (romans.flushing) return romans.flushing;
+    // .finally runs asynchronously, so the reset always lands after this assignment
+    // (clearing it inside the async body can run first when there is nothing to send).
+    romans.flushing = (async () => {
+        {
+            while (romans.active) {
+                const keys = Object.keys(romans.dirty);
+                if (!keys.length) break;
+                const i = Number(keys[0]);
+                delete romans.dirty[i];
+                romans.seq++;
+                romansPersist();
+                romansSetSave('saving');
+                let d;
+                try {
+                    d = await romansApi('romans_save', Object.assign(romansBase(), {
+                        v: i + 1, text: romans.drafts[i], seq: romans.seq,
+                        leaves: romans.counters.leaves, leaveSec: romans.counters.leaveSec,
+                        pastes: romans.counters.pastes, bigInserts: romans.counters.bigInserts,
+                        split: romans.counters.split
+                    }), keepalive);
+                } catch (e) {
+                    romans.dirty[i] = true;
+                    romansSetSave(navigator.onLine === false ? 'offline' : 'retry');
+                    romansScheduleRetry();
+                    return false;
+                }
+                if (d.status === 'success') {
+                    if (d.stale) { romans.seq = Math.max(romans.seq, d.seq || 0); romans.dirty[i] = true; }
+                    romansSync(d.remainingSec);
+                    continue;
+                }
+                romans.dirty[i] = true;
+                if (d.code === 'EXPIRED') { romansSubmit('AUTO'); return false; }
+                if (d.code === 'KEY_INVALID' || d.code === 'SUBMITTED' || d.code === 'NOT_STARTED') { romansHandleError(d, 'rmWriteStatus'); return false; }
+                romansSetSave('retry');   // BUSY or server error
+                romansScheduleRetry();
+                return false;
+            }
+            romans.retryMs = 0;
+            if (romans.active) romansSetSave('saved');
+            return true;
+        }
+    })().finally(() => { romans.flushing = null; });
+    return romans.flushing;
+}
+
+function romansScheduleRetry() {
+    if (romans.retryId) return;
+    romans.retryMs = Math.min(30000, romans.retryMs ? romans.retryMs * 2 : 2000);
+    romans.retryId = setTimeout(() => { romans.retryId = null; romansFlush(); }, romans.retryMs + Math.random() * 1000);
+}
+
+// ── Evidence (log only) ──
+function romansAttachListeners() {
+    if (romans.listening) return;
+    romans.listening = true;
+    const ta = rmEl('rmText');
+    ta.addEventListener('input', romansOnInput);
+    ta.addEventListener('paste', romansBlockPaste);
+    ta.addEventListener('drop', romansBlockPaste);
+    ta.addEventListener('beforeinput', e => {
+        if (e.inputType === 'insertFromPaste' || e.inputType === 'insertFromDrop' || e.inputType === 'insertFromPasteAsQuotation')
+            romansBlockPaste(e);
+    });
+    ta.addEventListener('focus', () => setTimeout(romansFitKeyboard, 300));
+    document.addEventListener('visibilitychange', romansOnVisibility);
+    window.addEventListener('resize', romansCheckSplit);
+    window.addEventListener('online', () => { if (romans.active) romansFlush(); });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', romansFitKeyboard);
+}
+
+function romansWordCount(t) { return (t.trim().match(/\S+/g) || []).length; }
+
+function romansOnInput(e) {
+    if (!romans.active) return;
+    const before = romans.drafts[romans.cur];
+    const now = e.target.value;
+    // Some keyboards insert clipboard text without a paste event — log large single inserts.
+    if (romansWordCount(now) - romansWordCount(before) >= RM_BIG_INSERT) romans.counters.bigInserts++;
+    romans.drafts[romans.cur] = now;
+    romans.dirty[romans.cur] = true;
+    romansPaintProgress();
+    romansSetSave('');
+    romansPersist();
+}
+
+function romansBlockPaste(e) {
+    e.preventDefault();
+    if (!romans.active) return;
+    romans.counters.pastes++;
+    romans.dirty[romans.cur] = true;
+    romansNotice('Pasting is switched off. This attempt was recorded.');
+}
+
+function romansOnVisibility() {
+    if (!romans.active) return;
+    if (document.hidden) {
+        romans.hiddenAt = Date.now();
+        romans.counters.leaves++;
+        romansCapture();
+        romans.dirty[romans.cur] = true;   // carries the counters, and saves the verse before the page sleeps
+        romansPersist();
+        romansFlush(true);
+    } else if (romans.hiddenAt) {
+        romans.counters.leaveSec += Math.round((Date.now() - romans.hiddenAt) / 1000);
+        romans.hiddenAt = 0;
+        romans.dirty[romans.cur] = true;
+        romansNotice('You left the page. This has been recorded for your instructor.');
+        romansFlush();                     // also resyncs the clock
+    }
+}
+
+// Split screen / floating window on phones and tablets (not flagged on laptops).
+function romansCheckSplit() {
+    if (!romans.active || romans.counters.split || !navigator.maxTouchPoints || !screen.width) return;
+    const landscape = screen.orientation
+        ? screen.orientation.type.indexOf('landscape') === 0
+        : Math.abs(window.orientation || 0) === 90;
+    const fullWidth = landscape ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    if (window.innerWidth / fullWidth < 0.8) {
+        romans.counters.split = 1;
+        romans.dirty[romans.cur] = true;
+    }
+}
+
+function romansNotice(msg) {
+    const id = rmEl('screenRomansReview').classList.contains('active') ? 'rmReviewStatus' : 'rmWriteStatus';
+    romansStatus(id, msg);
+    clearTimeout(romans.noticeId);
+    romans.noticeId = setTimeout(() => romansStatus(id, ''), 5000);
+}
+
+// Keep the textarea and Back/Next visible above the on-screen keyboard.
+function romansFitKeyboard() {
+    const ta = rmEl('rmText');
+    const vv = window.visualViewport;
+    const keyboardOpen = !!(vv && vv.height < window.innerHeight - 120);
+    const writing = romans.active && rmEl('screenRomansWrite').classList.contains('active');
+    document.body.classList.toggle('rm-kb', keyboardOpen && writing);
+    if (!writing) return;
+    if (keyboardOpen) {
+        rmEl('rmVerseLabel').scrollIntoView({ block: 'start' });
+        requestAnimationFrame(() => {
+            const top = ta.getBoundingClientRect().top - (vv.offsetTop || 0);
+            const below = rmEl('rmNav').offsetHeight + rmEl('rmSave').offsetHeight + 24;
+            ta.style.height = Math.max(110, Math.floor(vv.height - top - below)) + 'px';
+        });
+    } else {
+        ta.style.height = '';
+    }
+}
+
+// ── Submit ──
+async function romansSubmit(reason) {
+    if (romans.submitting) return;
+    romans.submitting = true;
+    romans.lastReason = reason;
+    if (reason === 'AUTO') romans.autoSubmitted = true;
+    romansCapture();
+    clearInterval(romans.timerId);
+    clearInterval(romans.autosaveId);
+    clearTimeout(romans.retryId); romans.retryId = null;
+    romansShowWait('Submitting your answers…', reason === 'AUTO'
+        ? 'Time is up. Saving what you have written…' : 'Please keep this page open.');
+    // Send any unsaved verses first — the server marks only what it has stored.
+    for (let n = 0; n < 3 && Object.keys(romans.dirty).length; n++) {
+        await romansFlush();
+        if (Object.keys(romans.dirty).length) await rmSleep(1500);
+    }
+    romans.active = false;
+    if (reason === 'AUTO') await rmSleep(Math.random() * 5000); // spread a class's auto-submits
+    romansSubmitCall();
+}
+
+async function romansSubmitCall() {
+    romans.retryAction = romansSubmitCall;
+    rmEl('rmRetryBtn').style.display = 'none';
+    let delay = 2000;
+    for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+            const d = await romansApi('romans_submit', Object.assign(romansBase(), { reason: romans.lastReason || 'MANUAL' }));
+            if (d.status === 'success') return romansAfterSubmit(d.next);
+            if (d.code === 'KEY_INVALID' || d.code === 'NOT_STARTED') return romansHandleError(d, 'rmDoneStatus');
+        } catch (e) { /* network — retry */ }
+        rmEl('rmDoneSub').textContent = 'Connection problem — retrying…';
+        await rmSleep(delay + Math.random() * 1000);
+        delay = Math.min(30000, delay * 2);
+    }
+    romansShowRetry('We could not reach the server. Your saved answers are safe — tap Try again. If time has run out, your saved answers are still marked.');
+}
+
+function romansAfterSubmit(next) {
+    romans.active = false;
+    clearInterval(romans.timerId);
+    clearInterval(romans.autosaveId);
+    document.body.classList.remove('rm-writing');
+    romansClearPersist();
+    const autoNote = romans.autoSubmitted ? 'Time is up, so your answers were submitted automatically. ' : '';
+    if (next === 'DONE') {
+        rmEl('subReg').textContent   = romans.reg;
+        rmEl('subTitle').textContent = 'Romans 13 Submitted!';
+        rmEl('subText').textContent  = autoNote + 'Your answers have been recorded. You are done.';
+        const note = document.querySelector('#submittedScreen .sub-note');
+        if (note) note.textContent = 'You may now close this tab.';
+        rmEl('submittedScreen').classList.add('active');
+        return;
+    }
+    romansShowWait('Romans 13 submitted ✓', autoNote + 'Loading your MCQ…');
+    romansHandoff();
+}
+
+// BEFORE_MCQ: verify_assessment again — it is still the single gate — then the existing MCQ flow.
+async function romansHandoff() {
+    romans.retryAction = romansHandoff;
+    rmEl('rmRetryBtn').style.display = 'none';
+    romansStatus('rmDoneStatus', '');
+    if (!romans.isOnline && !userLocation) {
+        rmEl('rmDoneSub').textContent = 'Getting your location…';
+        for (let n = 0; n < 30 && !userLocation; n++) await rmSleep(500);
+        if (!userLocation) return romansShowRetry('Your location is not available. Please allow location access and tap Try again.');
+    }
+    try {
+        const data = await (await fetch(buildVerifyUrl(romans.reg, romans.isOnline, romans.onlineCode))).json();
+        if (data.status !== 'success') return romansShowRetry(data.message || 'Could not open the MCQ. Tap Try again.');
+        if (data.stage === 'ROMANS') return romansStart(data, romans.isOnline, romans.onlineCode);
+        onVerifiedForMcq(data, romans.reg, romans.isOnline);
+    } catch (e) { romansShowRetry('Connection error — check your internet and tap Try again.'); }
+}
+
+// ── Shared states ──
+function romansShowWait(title, sub) {
+    rmEl('rmDoneSpinner').style.display = 'block';
+    rmEl('rmDoneTitle').textContent = title;
+    rmEl('rmDoneSub').textContent = sub || '';
+    rmEl('rmRetryBtn').style.display = 'none';
+    romansStatus('rmDoneStatus', '');
+    showScreen('screenRomansDone');
+}
+function romansShowRetry(msg) {
+    rmEl('rmDoneSpinner').style.display = 'none';
+    romansStatus('rmDoneStatus', msg);
+    rmEl('rmRetryBtn').style.display = 'block';
+    showScreen('screenRomansDone');
+}
+function romansRetry() { if (romans.retryAction) romans.retryAction(); }
+
+function romansHandleError(d, statusId) {
+    const code = d.code || '';
+    if (code === 'SUBMITTED') return romansAfterSubmit(romans.mode === 'ALONE' ? 'DONE' : 'MCQ');
+    if (code === 'EXPIRED') return romansSubmit('AUTO');
+    if (code === 'KEY_INVALID') {
+        // Reopened on another device, reset by admin, or session changed — sign in again.
+        romans.active = false;
+        clearInterval(romans.timerId);
+        clearInterval(romans.autosaveId);
+        document.body.classList.remove('rm-writing');
+        romansClearPersist();
+        showScreen('screenLogin');
+        loginStatus.textContent = d.message || 'Please sign in again.';
+        loginStatus.className = 'status-msg error';
+        resetBtn();
+        if (!examOpenPoller) startExamOpenPolling();
+        return;
+    }
+    if (statusId === 'rmDoneStatus') return romansShowRetry(d.message || 'Something went wrong. Tap Try again.');
+    romansStatus(statusId, d.message || 'Something went wrong. Please try again.');
+}
+// ═══ END ROMANS STAGE ═══
+
 // Submission detection: student taps "I Have Submitted" button manually (see confirmSubmitted)
 // ════════════════════════════════════════════════════════════
 //  INIT — Restore session if exists, otherwise start GPS
 //         and begin background assessment-open polling.
 // ════════════════════════════════════════════════════════════
-if (!restoreSession()) {
+if (!romansRestore() && !restoreSession()) {
     // No active session — normal flow
     startLocation();           // start GPS immediately
     startExamOpenPolling();    // check + poll exam open status in background
@@ -1362,7 +2059,7 @@ function submitDoneTap() {
 }
 
 window.addEventListener('beforeunload', function(e) {
-    if (examInProgress) {
+    if (examInProgress || romans.active) {
         e.preventDefault();
         e.returnValue = 'Your exam is in progress. Leaving will not cancel your attempt but you may lose your place.';
         return e.returnValue;
