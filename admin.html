@@ -451,6 +451,38 @@ input:focus, select:focus { outline: none; }
 }
 .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+/* Bible Verse (Romans 13) toggle — Assessment Setup card */
+.bv-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.bv-toggle {
+    display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--ink); user-select: none; white-space: nowrap;
+}
+.bv-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.bv-switch {
+    position: relative; width: 40px; height: 22px; flex-shrink: 0;
+    border-radius: 99px; background: var(--ink-4); transition: background .15s;
+}
+.bv-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .15s;
+}
+.bv-toggle input:checked + .bv-switch { background: var(--green); }
+.bv-toggle input:checked + .bv-switch::after { transform: translateX(18px); }
+.bv-toggle input:focus-visible + .bv-switch { outline: 2px solid var(--green); outline-offset: 2px; }
+.bv-toggle.locked { opacity: 0.45; cursor: not-allowed; }
+.bv-note { display: none; font-size: 11px; color: var(--ink-3); }
+.bv-note.show { display: block; }
+.setup-summary {
+    font-size: 13px; color: var(--ink-2); background: var(--line-soft);
+    border-radius: var(--r-sm); padding: 10px 12px; margin-bottom: 12px;
+}
+.setup-summary strong { color: var(--green-deep); }
+.setup-summary.warn { background: var(--amber-soft); color: var(--amber-text); }
+@media (max-width: 480px) {
+    .bv-head { flex-wrap: wrap; }
+    .bv-head .bv-wrap { align-items: flex-start; }
+}
+
 /* ATTENDANCE PAGE */
 .att-summary {
     display: grid; grid-template-columns: repeat(3, 1fr);
@@ -1761,16 +1793,25 @@ input:focus, select:focus { outline: none; }
 
                     <!-- Card 2: Assessment Setup -->
                     <div class="card" style="margin-top:14px;">
-                        <div class="card-head">
+                        <div class="card-head bv-head">
                             <div class="card-head-text">
                                 <div class="card-title">Assessment Setup</div>
                                 <div class="card-sub">Paste your pre-filled Google Form link to auto-extract entry IDs and save the Config sheet in one click.</div>
                             </div>
+                            <!-- Bible Verse (Romans 13): mode is derived from this + the Form URL (see updateSetupSummary) -->
+                            <div class="bv-wrap">
+                                <label class="bv-toggle" id="bvToggleLabel">
+                                    <span>Bible Verse (Romans 13)</span>
+                                    <input type="checkbox" id="setupBibleVerse" role="switch" onchange="onBibleVerseToggle()">
+                                    <span class="bv-switch" aria-hidden="true"></span>
+                                </label>
+                                <div class="bv-note" id="bvLockedNote">Always on for MID-COURSE and EXAM</div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="code-field" style="margin-bottom:12px;">
-                                <label>Pre-filled Form URL <span style="font-size:11px; color:var(--ink-3); font-weight:400;">(Google Forms → ⋮ → Get pre-filled link)</span></label>
-                                <input type="text" id="setupFormUrl" class="input" placeholder="https://docs.google.com/forms/d/e/.../viewform?usp=pp_url&entry.123=..." oninput="parseFormUrl()">
+                                <label>Pre-filled Form URL <span style="font-size:11px; color:var(--ink-3); font-weight:400;">(Google Forms → ⋮ → Get pre-filled link)<span id="setupUrlHint"></span></span></label>
+                                <input type="text" id="setupFormUrl" class="input" placeholder="https://docs.google.com/forms/d/e/.../viewform?usp=pp_url&entry.123=..." oninput="parseFormUrl(); updateSetupSummary()">
                             </div>
 
                             <div id="setupExtracted" style="display:none; margin-bottom:14px;">
@@ -1799,13 +1840,15 @@ input:focus, select:focus { outline: none; }
                                 </div>
                                 <div class="sel-field">
                                     <label>Type</label>
-                                    <select id="setupType" class="input">
+                                    <select id="setupType" class="input" onchange="updateSetupSummary()">
                                         <option value="TEST">TEST</option>
                                         <option value="MID-COURSE">MID-COURSE TEST</option>
                                         <option value="EXAM">EXAM</option>
                                     </select>
                                 </div>
                             </div>
+
+                            <div class="setup-summary" id="setupSummary" aria-live="polite"></div>
 
                             <button class="btn btn-primary btn-sm btn-full" id="btnSaveSetup" onclick="saveAssessmentSetup()" disabled>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -3473,13 +3516,59 @@ function parseFormUrl() {
     btn.dataset.entryFirst = entryFirst;
 }
 
+// \u2500\u2500 Bible Verse (Romans 13) toggle \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// The admin never picks a mode; it is derived from the toggle + Form URL:
+//   OFF -> MCQ only \u00b7 ON + Form URL -> Bible Verse + MCQ \u00b7 ON + no URL -> Bible Verse only (TEST only)
+// MID-COURSE and EXAM are always ON and need a Form URL. save_assessment_config
+// applies the same rules server-side, so this card cannot bypass them.
+var setupBibleVerseTestChoice = false; // the admin's TEST choice, kept while Type is switched around
+
+function setupBibleVerseState() {
+    var type   = document.getElementById('setupType').value;
+    var forced = type === 'MID-COURSE' || type === 'EXAM';
+    var on     = forced || setupBibleVerseTestChoice;
+    var hasUrl = document.getElementById('setupFormUrl').value.trim() !== '';
+    var parsed = document.getElementById('setupExtracted').style.display === 'block';
+    var mode   = !on ? '' : hasUrl ? 'BEFORE_MCQ' : forced ? 'NEEDS_URL' : 'ALONE';
+    return { type: type, forced: forced, on: on, hasUrl: hasUrl, parsed: parsed, mode: mode };
+}
+
+function onBibleVerseToggle() {
+    setupBibleVerseTestChoice = document.getElementById('setupBibleVerse').checked;
+    updateSetupSummary();
+}
+
+function updateSetupSummary() {
+    var s = setupBibleVerseState();
+    var toggle = document.getElementById('setupBibleVerse');
+    toggle.checked  = s.on;
+    toggle.disabled = s.forced;
+    document.getElementById('bvToggleLabel').classList.toggle('locked', s.forced);
+    document.getElementById('bvLockedNote').classList.toggle('show', s.forced);
+
+    var label = { 'TEST': 'Test', 'MID-COURSE': 'Mid-course', 'EXAM': 'Exam' }[s.type] || s.type;
+    var box = document.getElementById('setupSummary');
+    if (s.mode === '')                box.innerHTML = 'This will run as: <strong>' + label + ' (MCQ only)</strong>';
+    else if (s.mode === 'BEFORE_MCQ') box.innerHTML = 'This will run as: <strong>Combined ' + label + ' + Bible Verse</strong>';
+    else if (s.mode === 'ALONE')      box.innerHTML = 'This will run as: <strong>Bible Verse only</strong> \u2014 no MCQ form needed';
+    else                              box.innerHTML = 'Paste the MCQ form link \u2014 ' + label + ' always runs Bible Verse + MCQ.';
+    box.classList.toggle('warn', s.mode === 'NEEDS_URL');
+    document.getElementById('setupUrlHint').textContent = s.on && !s.forced ? ' \u2014 leave empty for Bible Verse only' : '';
+
+    // Save needs a parsed form link, except for Bible Verse only
+    document.getElementById('btnSaveSetup').disabled = !((s.hasUrl && s.parsed) || s.mode === 'ALONE');
+}
+
 async function saveAssessmentSetup() {
     var btn    = document.getElementById('btnSaveSetup');
     var topic  = document.getElementById('setupTopic').value.trim();
     var type   = document.getElementById('setupType').value;
     var result = document.getElementById('setupResult');
+    var bv     = setupBibleVerseState();
+    var alone  = bv.mode === 'ALONE';
     if (!topic) { result.innerHTML = '<span style="color:var(--red-mid);">Please enter a topic name.</span>'; return; }
-    if (!btn.dataset.baseUrl) { result.innerHTML = '<span style="color:var(--red-mid);">Please paste and parse a form URL first.</span>'; return; }
+    if (bv.mode === 'NEEDS_URL') { result.innerHTML = '<span style="color:var(--red-mid);">Please paste the MCQ form link \u2014 ' + safeHtml(type) + ' always runs Bible Verse + MCQ.</span>'; return; }
+    if (!alone && !(bv.parsed && btn.dataset.baseUrl)) { result.innerHTML = '<span style="color:var(--red-mid);">Please paste and parse a form URL first.</span>'; return; }
     btn.disabled = true; btn.textContent = 'Saving\u2026';
     try {
         var url = EXAM_SCRIPT_URL + '?action=save_assessment_config'
@@ -3487,10 +3576,11 @@ async function saveAssessmentSetup() {
             + '&adminName='  + encodeURIComponent(admin.name)
             + '&topic='      + encodeURIComponent(topic)
             + '&type='       + encodeURIComponent(type)
-            + '&formUrl='    + encodeURIComponent(btn.dataset.baseUrl)
-            + '&entryReg='   + encodeURIComponent(btn.dataset.entryReg)
-            + '&entrySur='   + encodeURIComponent(btn.dataset.entrySur)
-            + '&entryFirst=' + encodeURIComponent(btn.dataset.entryFirst)
+            + '&formUrl='    + encodeURIComponent(alone ? '' : btn.dataset.baseUrl)
+            + '&entryReg='   + encodeURIComponent(alone ? '' : btn.dataset.entryReg)
+            + '&entrySur='   + encodeURIComponent(alone ? '' : btn.dataset.entrySur)
+            + '&entryFirst=' + encodeURIComponent(alone ? '' : btn.dataset.entryFirst)
+            + '&bibleVerse=' + (bv.on ? 'ON' : 'OFF')
             + '&cb=' + Date.now();
         var res  = await fetch(url);
         var data = await res.json();
@@ -3499,6 +3589,7 @@ async function saveAssessmentSetup() {
             document.getElementById('setupFormUrl').value = '';
             document.getElementById('setupTopic').value  = '';
             document.getElementById('setupExtracted').style.display = 'none';
+            setupBibleVerseTestChoice = false;
             loadAssessInfo();
         } else {
             result.innerHTML = '<span style="color:var(--red-mid);">' + safeHtml(data.message || 'Save failed.') + '</span>';
@@ -3506,9 +3597,10 @@ async function saveAssessmentSetup() {
     } catch(e) {
         result.innerHTML = '<span style="color:var(--red-mid);">Connection error. Try again.</span>';
     }
-    btn.disabled = false;
     btn.textContent = 'Save to Config Sheet';
+    updateSetupSummary(); // re-derives whether Save is enabled
 }
+updateSetupSummary();
 
 // ============================================================
 //  ASSESSMENT TAB MODULE
