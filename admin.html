@@ -1315,6 +1315,39 @@ input:focus, select:focus { outline: none; }
 .mob-desktop-only-icon svg { width: 24px; height: 24px; }
 .mob-desktop-only h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
 .mob-desktop-only p { font-size: 13px; color: var(--ink-3); line-height: 1.6; max-width: 28ch; margin: 0 auto; }
+
+/* ── Attendance page: Student / Admin tabs + Admin Attendance list ── */
+.att-tabs .att-tab-short { display: none; }
+.adm-att-dates { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.adm-att-pills {
+    display: flex; gap: 6px; flex: 1; min-width: 0;
+    overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.adm-att-pills::-webkit-scrollbar { display: none; }
+.adm-att-pills .att-day-pill { flex: 0 0 auto; padding: 0 14px; white-space: nowrap; }
+.adm-att-dates .input { flex: 0 0 auto; width: 150px; height: 38px; }
+.adm-att-list { display: flex; flex-direction: column; gap: 4px; }
+.adm-att-section {
+    display: flex; align-items: center; gap: 6px; padding: 12px 2px 4px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3);
+}
+.adm-att-section:first-child { padding-top: 0; }
+.adm-att-section span { font-weight: 600; color: var(--ink-4); }
+.adm-att-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
+.att-status.test { background: var(--amber-soft); color: var(--amber-text); }
+.adm-att-absent .att-avatar { background: var(--ink-4); }
+.adm-att-absent .att-name-main { color: var(--ink-2); }
+.adm-att-foot { font-size: 11.5px; color: var(--ink-3); margin-top: 10px; }
+.adm-att-foot:empty { display: none; }
+@media (max-width: 480px) {
+    .att-tabs .assess-tab { flex: 1; padding: 10px 8px; }
+    .att-tabs .att-tab-long { display: none; }
+    .att-tabs .att-tab-short { display: inline; }
+    .adm-att-dates { flex-wrap: wrap; }
+    .adm-att-pills { flex-basis: 100%; }
+    .adm-att-dates .input { width: 100%; }
+    .adm-att-head { flex-wrap: wrap; }
+}
 </style>
 </head>
 <body>
@@ -1682,12 +1715,21 @@ input:focus, select:focus { outline: none; }
                         <p class="page-sub" id="attDateSub">Load a session to view attendance</p>
                     </div>
                     <div class="page-actions">
-                        <button class="btn btn-outline btn-sm" onclick="loadAttendance()">
+                        <button class="btn btn-outline btn-sm" onclick="refreshAttendancePage()">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15"/></svg>
                             Refresh
                         </button>
                     </div>
                 </div>
+
+                <!-- Student / Admin attendance tabs -->
+                <div class="assess-tabs att-tabs">
+                    <button class="assess-tab active" id="tabAttStudent" onclick="switchAttTab('student')"><span class="att-tab-long">Student Attendance</span><span class="att-tab-short">Students</span></button>
+                    <button class="assess-tab" id="tabAttAdmin" onclick="switchAttTab('admin')"><span class="att-tab-long">Admin Attendance</span><span class="att-tab-short">Admins</span></button>
+                </div>
+
+                <!-- Tab 1 — Student Attendance -->
+                <div class="assess-tab-panel show" id="panelAttStudent">
 
                 <!-- Day quick-select pills -->
                 <div class="att-day-pills">
@@ -1733,6 +1775,36 @@ input:focus, select:focus { outline: none; }
 
                         <div class="att-list" id="attList">
                             <div class="att-empty">Open this page after a session is loaded to view attendance.</div>
+                        </div>
+                    </div>
+                </div>
+                </div><!-- /panelAttStudent -->
+
+                <!-- Tab 2 — Admin Attendance: which admins checked in, and how (names for the report) -->
+                <div class="assess-tab-panel" id="panelAttAdmin">
+                    <div class="adm-att-dates">
+                        <div class="adm-att-pills" id="admAttDatePills"></div>
+                        <input type="date" id="admAttDate" class="input" aria-label="Pick a date" onchange="pickAdminAttDate(this.value)">
+                    </div>
+                    <div class="card">
+                        <div class="card-head adm-att-head">
+                            <div class="card-head-text">
+                                <div class="card-title">Admin Attendance</div>
+                                <div class="card-sub" id="admAttSub">Who checked in, and how</div>
+                            </div>
+                            <div class="btn-row">
+                                <button class="btn btn-outline btn-sm" id="btnAdmAttCopy" onclick="copyAdminAttendance()">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                    Copy list
+                                </button>
+                                <button class="btn btn-outline btn-sm" onclick="loadAdminAttendance(admAtt.date)" title="Refresh admin attendance" aria-label="Refresh admin attendance">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="adm-att-list" id="admAttList"><div class="att-empty">Loading…</div></div>
+                            <div class="adm-att-foot" id="admAttFoot"></div>
                         </div>
                     </div>
                 </div>
@@ -2050,6 +2122,9 @@ input:focus, select:focus { outline: none; }
 
                 <div class="page-content-wrap">
 
+                <!-- My Group pills — shown only for admins with more than one group -->
+                <div class="att-day-pills" id="myGroupPills" style="display:none; max-width:100%;"></div>
+
                 <!-- My Group Panel — regular admins, auto-loads on page open -->
                 <div class="card" id="myGroupPanel" style="display:none; margin-bottom:14px;">
                     <div class="card-head">
@@ -2355,7 +2430,7 @@ function switchPage(name, btn) {
 
     // Lazy-load page data
     if (name === 'dashboard')   loadDashboard();
-    if (name === 'attendance')  loadAttendance();
+    if (name === 'attendance') { switchAttTab('student'); loadAttendance(); }
     if (name === 'saturday')    { if (sessionData) updateSaturdayUI(sessionData); }
     if (name === 'scores')      updateTopicList();
     if (name === 'permissions') { updateExcuseForm(); loadExcuses(); }
@@ -3436,6 +3511,197 @@ function setAttDay(offset, btn) {
 
 
 
+// ── Attendance page tabs: Student (default) / Admin ──────────
+let attTab = 'student';
+
+function switchAttTab(tab) {
+    attTab = tab === 'admin' ? 'admin' : 'student';
+    document.getElementById('tabAttStudent').classList.toggle('active', attTab === 'student');
+    document.getElementById('tabAttAdmin').classList.toggle('active', attTab === 'admin');
+    document.getElementById('panelAttStudent').classList.toggle('show', attTab === 'student');
+    document.getElementById('panelAttAdmin').classList.toggle('show', attTab === 'admin');
+    // The page subtitle is the student date — the Admin card shows its own
+    document.getElementById('attDateSub').style.display = attTab === 'admin' ? 'none' : '';
+    if (attTab === 'admin') loadAdminAttendance(admAtt.picked);
+}
+
+// Page-head Refresh: reloads whichever tab is showing
+function refreshAttendancePage() {
+    if (attTab === 'admin') loadAdminAttendance(admAtt.date);
+    else loadAttendance();
+}
+
+// ── Admin Attendance — which admins checked in, and how ──────
+// Names + Physical/Online for one date, from get_admin_attendance (admin script).
+// Fetched when the tab opens and on Refresh — no polling. No date = the server
+// picks today, or the most recent date anyone checked in.
+let admAtt = { date: '', picked: '', data: null, seq: 0 };
+
+async function loadAdminAttendance(date) {
+    const list = document.getElementById('admAttList');
+    const seq = ++admAtt.seq;
+    list.innerHTML = '<div class="att-empty">Loading…</div>';
+    document.getElementById('admAttFoot').textContent = '';
+    try {
+        const url = SCRIPT_URL + '?action=get_admin_attendance'
+            + '&token='     + encodeURIComponent(SCRIPT_TOKEN)
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + (date ? '&date=' + encodeURIComponent(date) : '')
+            + '&cb='        + Date.now();
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (seq !== admAtt.seq) return;   // a newer request has replaced this one
+        if (data.status !== 'success') {
+            admAtt.data = null;
+            list.innerHTML = '<div class="att-empty">' + safeHtml(data.message || 'Could not load admin attendance.') + '</div>';
+            return;
+        }
+        admAtt.date = data.date;
+        admAtt.data = data;
+        renderAdminAttendance(data);
+    } catch (e) {
+        if (seq !== admAtt.seq) return;
+        admAtt.data = null;
+        list.innerHTML = '<div class="att-empty">Connection error. Please try again.</div>';
+    }
+}
+
+function pickAdminAttDate(date) {
+    if (!date) return;
+    admAtt.picked = date;
+    loadAdminAttendance(date);
+}
+
+function admAttDateLabel(date, long) {
+    const d = new Date(date + 'T12:00:00');
+    if (isNaN(d.getTime())) return date;
+    return d.toLocaleDateString('en-GB', long
+        ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+        : { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function admAttModeText(mode) {
+    return mode === 'PHYSICAL' ? 'Physical' : mode === 'ONLINE' ? 'Online' : (mode || '—');
+}
+
+function renderAdminAttendance(d) {
+    // Recent check-in dates as quick picks; the date picker reaches older ones
+    document.getElementById('admAttDatePills').innerHTML = (d.dates || []).map(function(x) {
+        return '<button class="att-day-pill' + (x === d.date ? ' active' : '') + '" data-date="' + safeHtml(x) + '" onclick="pickAdminAttDate(this.dataset.date)">'
+            + safeHtml((x === d.today ? 'Today · ' : '') + admAttDateLabel(x)) + '</button>';
+    }).join('');
+    const picker = document.getElementById('admAttDate');
+    picker.value = d.date;
+    picker.max = d.today;
+    document.getElementById('admAttSub').textContent = admAttDateLabel(d.date, true) + (d.testMode ? ' · Test Mode on' : '');
+
+    const records = d.records || [];
+    const absent  = d.notCheckedIn || [];
+    let html = records.length ? '' : '<div class="att-empty">No admin check-ins yet for this date.</div>';
+    let section = null;
+    records.forEach(function(r) {
+        if (r.event !== section) {
+            section = r.event;
+            const n = records.filter(function(x) { return x.event === section; }).length;
+            html += '<div class="adm-att-section">' + safeHtml(r.eventLabel) + ' <span>' + n + '</span></div>';
+        }
+        html += admAttRow(r.name, r);
+    });
+    if (absent.length) {
+        html += '<div class="adm-att-section">Not checked in <span>' + absent.length + '</span></div>';
+        html += absent.map(function(n) { return admAttRow(n, null); }).join('');
+    }
+    document.getElementById('admAttList').innerHTML = html;
+    const t = d.totals || {};
+    document.getElementById('admAttFoot').textContent = (records.length || absent.length)
+        ? (t.physical || 0) + ' physical · ' + (t.online || 0) + ' online · ' + (t.absent || 0) + ' not checked in' : '';
+}
+
+function admAttInitials(name) {
+    const parts = String(name || '').trim().split(/\s+/);
+    return parts.length >= 2
+        ? (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+        : String(name || '??').substring(0, 2).toUpperCase();
+}
+
+function admAttBadge(mode, prefix) {
+    const cls = mode === 'PHYSICAL' ? 'physical' : mode === 'ONLINE' ? 'online' : '';
+    return '<span class="att-status ' + cls + '">' + (prefix ? prefix + ' · ' : '') + safeHtml(admAttModeText(mode)) + '</span>';
+}
+
+// One admin row; r is the check-in record, or null for "not checked in"
+function admAttRow(name, r) {
+    let meta = '', badges;
+    if (!r) {
+        badges = '<span class="att-status absent">Not checked in</span>';
+    } else {
+        meta = r.time || '';
+        if (r.outMode !== undefined) {   // Saturday with a separate check-out
+            if (r.outTime) meta += ' – ' + r.outTime;
+            badges = admAttBadge(r.mode, 'In') + admAttBadge(r.outMode, 'Out');
+        } else {
+            badges = admAttBadge(r.mode);
+        }
+        if (r.test) badges = '<span class="att-status test">Test</span>' + badges;
+        if (r.dupes) meta += (meta ? ' · ' : '') + '+' + r.dupes + ' duplicate' + (r.dupes === 1 ? '' : 's');
+    }
+    return '<div class="att-row' + (r ? '' : ' adm-att-absent') + '">'
+        + '<div class="att-avatar">' + safeHtml(admAttInitials(name)) + '</div>'
+        + '<div class="att-name">'
+        +   '<div class="att-name-main">' + safeHtml(name) + '</div>'
+        +   (meta ? '<div class="att-name-reg">' + safeHtml(meta) + '</div>' : '')
+        + '</div>'
+        + '<div class="adm-att-badges">' + badges + '</div>'
+        + '</div>';
+}
+
+// "Name: Physical" per line, ready to paste into the report; admins who
+// have not checked in follow as "Name: Absent". Section lines only when a
+// date has more than one event.
+function adminAttendanceText(d) {
+    const records = d.records || [];
+    const absent  = d.notCheckedIn || [];
+    const events  = records.map(function(r) { return r.event; }).filter(function(v, i, a) { return a.indexOf(v) === i; });
+    const lines = [];
+    let section = null;
+    records.forEach(function(r) {
+        if (events.length > 1 && r.event !== section) { section = r.event; lines.push(r.eventLabel + ':'); }
+        const status = r.outMode !== undefined
+            ? 'In ' + admAttModeText(r.mode) + ', Out ' + admAttModeText(r.outMode)
+            : admAttModeText(r.mode);
+        lines.push(r.name + ': ' + status);
+    });
+    if (events.length > 1 && absent.length) lines.push('Not checked in:');
+    absent.forEach(function(n) { lines.push(n + ': Absent'); });
+    return lines.join('\n');
+}
+
+function copyAdminAttendance() {
+    const text = admAtt.data ? adminAttendanceText(admAtt.data) : '';
+    if (!text) { showToast('Nothing to copy yet.', 'warn'); return; }
+    const done = function() { showToast('Copied ' + text.split('\n').length + ' lines — paste into the report.', 'ok'); };
+    const fail = function() { showToast('Could not copy — select the names and copy them manually.', 'err'); };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function() { copyTextFallback(text) ? done() : fail(); });
+    } else if (copyTextFallback(text)) done();
+    else fail();
+}
+
+// Older iOS / non-HTTPS pages: copy through a hidden textarea
+function copyTextFallback(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+}
+
 // ── Assessment Setup helpers ──────────────────────────────────
 function parseFormUrl() {
     var raw   = document.getElementById('setupFormUrl').value.trim();
@@ -3699,8 +3965,9 @@ function copySunCode() {
 // ============================================================
 //  MY GROUP MODULE — all admins, mobile-first
 // ============================================================
-let myGroupCache = { students: [], tabName: '' };
+let myGroupCache = { students: [], tabName: '', groups: [] };
 let myGroupVisible = false;
+let myGroupFilter = 'all';   // 'all' or a group number — kept so a save redraws the same view
 
 function toggleMyGroupPanel() {
     // No longer used — My Group panel auto-loads via grouping page
@@ -3717,53 +3984,154 @@ async function loadMyGroup() {
             + '&token='     + encodeURIComponent(SCRIPT_TOKEN)
             + '&adminName=' + encodeURIComponent(admin.name)
             + '&password='  + encodeURIComponent(getStoredPass())
-            + '&cb=' + Date.now();
+            + '&cb='        + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
         if (data.status !== 'success') {
             list.innerHTML = '<div class="att-empty" style="color:var(--red-mid);">' + safeHtml(data.message || 'Failed to load group.') + '</div>';
             return;
         }
-        myGroupCache = { students: data.students || [], tabName: data.tabName || '' };
-        title.textContent = data.tabName || 'My Group';
-        sub.textContent   = data.total + ' student' + (data.total === 1 ? '' : 's');
-        renderMyGroup(myGroupCache.students);
-    } catch(e) {
+
+        // Older backends send one group with no groups[] — treat it as a single group
+        const students = data.students || [];
+        students.forEach(function(s) {
+            if (!s.tabName)  s.tabName  = data.tabName || '';
+            if (!s.groupNum) s.groupNum = String(data.groupNum || '');
+        });
+        const groups = (data.groups && data.groups.length)
+            ? data.groups
+            : [{ groupNum: String(data.groupNum || ''), tabName: data.tabName || '', students: students }];
+        const isMulti = groups.length > 1;
+
+        // One object per student: point each group's list at the flat list's objects,
+        // so a save updates what every view shows (JSON gives two separate copies).
+        const byKey = {};
+        students.forEach(function(s) { byKey[myGroupKey(s)] = s; });
+        groups.forEach(function(g) {
+            g.students = (g.students || []).map(function(s) { return byKey[myGroupKey(s)] || s; });
+        });
+
+        myGroupCache = { students: students, tabName: data.tabName || '', groups: groups };
+        myGroupFilter = 'all';
+
+        // ── Title and subtitle ─────────────────────────────
+        const missing = (data.missingGroups || []).length
+            ? ' · Group ' + data.missingGroups.join(', ') + ' tab not found — tell a Super Admin' : '';
+        if (isMulti) {
+            title.textContent = 'My Groups';
+            sub.textContent   = groups.length + ' groups · ' + (data.totalAllStudents || data.total) + ' students' + missing;
+        } else {
+            title.textContent = data.tabName || 'My Group';
+            sub.textContent   = data.total + ' student' + (data.total === 1 ? '' : 's') + missing;
+        }
+
+        // ── Filter bar ────────────────────────────────────
+        renderMyGroupFilterBar(groups, isMulti);
+
+        // ── Render students ───────────────────────────────
+        renderMyGroups(myGroupCache.students, null);
+
+    } catch (e) {
         list.innerHTML = '<div class="att-empty" style="color:var(--red-mid);">Connection error. Try again.</div>';
     }
 }
 
-function renderMyGroup(students) {
+// A student's identity in the dashboard: its tab + row (the same reg can sit in two tabs)
+function myGroupKey(s) { return s.tabName + '|' + s.rowIndex; }
+
+function renderMyGroupFilterBar(groups, isMulti) {
+    const pills = document.getElementById('myGroupPills');
+    if (!pills) return;
+    if (!isMulti) { pills.style.display = 'none'; pills.innerHTML = ''; return; }
+    pills.style.display = 'flex';
+    const allCount = groups.reduce(function(sum, g) { return sum + g.students.length; }, 0);
+    var html = '<button class="att-day-pill active" data-group="all" onclick="filterMyGroups(this, &quot;all&quot;)">All (' + allCount + ')</button>';
+    groups.forEach(function(g) {
+        html += '<button class="att-day-pill" data-group="' + safeHtml(g.groupNum) + '" onclick="filterMyGroups(this, &quot;' + safeHtml(g.groupNum) + '&quot;)">Group ' + safeHtml(g.groupNum) + ' (' + g.students.length + ')</button>';
+    });
+    pills.innerHTML = html;
+}
+
+function filterMyGroups(btn, groupNum) {
+    document.querySelectorAll('#myGroupPills .att-day-pill').forEach(function(p) {
+        p.classList.toggle('active', btn ? p === btn : p.dataset.group === groupNum);
+    });
+    myGroupFilter = groupNum;
+    if (groupNum === 'all') {
+        renderMyGroups(myGroupCache.students, null);
+    } else {
+        var group = (myGroupCache.groups || []).filter(function(g) { return g.groupNum === groupNum; })[0];
+        renderMyGroups(group ? group.students : [], groupNum);
+    }
+}
+
+// Redraws the list for the pill currently selected
+function rerenderMyGroups() {
+    filterMyGroups(null, myGroupFilter);
+}
+
+function renderMyGroups(students, activeGroupNum) {
     const list = document.getElementById('myGroupList');
     if (!students || !students.length) {
         list.innerHTML = '<div class="att-empty">No students in your group yet. Run Update Groups first.</div>';
         return;
     }
-    list.innerHTML = students.map(function(s, idx) {
-        var addedBadge   = s.added    === 'Yes' ? '<span class="s-badge yes">Added</span>'   : '<span class="s-badge no">Not Added</span>';
-        var busBadge     = s.followBus === 'Yes' ? '<span class="s-badge yes">Bus</span>'     : '';
-        var busgBadge    = s.addedBus === 'Yes'  ? '<span class="s-badge yes">Bus Group</span>' : '';
-        return '<div class="student-row">'
-            + '<div class="student-info">'
-            + '<div class="student-name">' + safeHtml(s.firstName + ' ' + s.lastName) + '</div>'
-            + '<div class="student-phone">' + safeHtml(s.phone || s.reg) + '</div>'
-            + '<div class="student-badges">' + addedBadge + busBadge + busgBadge + '</div>'
-            + '</div>'
-            + '<button class="student-edit-btn" onclick="openStudentEdit(' + idx + ')">Edit</button>'
-            + '</div>';
-    }).join('');
+
+    const isMulti  = (myGroupCache.groups || []).length > 1;
+    const showAll  = !activeGroupNum || activeGroupNum === 'all';
+    const allStudents = myGroupCache.students || [];
+
+    // Index in the flat list by tab + row (a reg alone can match a copy in another group)
+    function idxOf(s) {
+        var key = myGroupKey(s);
+        return allStudents.findIndex(function(a) { return myGroupKey(a) === key; });
+    }
+
+    // In multi-group + show-all mode → group sections
+    if (isMulti && showAll) {
+        var html = '';
+        (myGroupCache.groups || []).forEach(function(g) {
+            html += '<div style="padding:10px 0 6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); border-bottom:1px solid var(--line-soft); margin-bottom:4px;">Group ' + safeHtml(g.groupNum)
+                + ' <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-3);">'
+                + g.students.length + ' students</span></div>';
+            html += g.students.map(function(s) {
+                return renderStudentRow(s, idxOf(s));
+            }).join('');
+        });
+        list.innerHTML = html;
+    } else {
+        list.innerHTML = students.map(function(s) {
+            return renderStudentRow(s, idxOf(s));
+        }).join('');
+    }
+}
+
+function renderStudentRow(s, idx) {
+    var addedBadge = s.added === 'Yes'
+        ? '<span class="s-badge yes">Added</span>'
+        : '<span class="s-badge no">Not Added</span>';
+    var busBadge  = s.followBus === 'Yes' ? '<span class="s-badge yes">Bus</span>' : '';
+    var busgBadge = s.addedBus  === 'Yes' ? '<span class="s-badge yes">Bus Group</span>' : '';
+    return '<div class="student-row">'
+        + '<div class="student-info">'
+        + '<div class="student-name">' + safeHtml(s.firstName + ' ' + s.lastName) + '</div>'
+        + '<div class="student-phone">' + safeHtml(s.phone || s.reg) + '</div>'
+        + '<div class="student-badges">' + addedBadge + busBadge + busgBadge + '</div>'
+        + '</div>'
+        + '<button class="student-edit-btn" onclick="openStudentEdit(' + idx + ')">Edit</button>'
+        + '</div>';
 }
 
 function openStudentEdit(idx) {
     const s = myGroupCache.students[idx];
     if (!s) return;
-    document.getElementById('editStudentIdx').value      = idx;
+    document.getElementById('editStudentIdx').value = idx;
     document.getElementById('editStudentName').textContent = s.firstName + ' ' + s.lastName;
-    document.getElementById('editStudentReg').textContent  = s.reg;
-    document.getElementById('editAdded').value    = s.added    || '';
-    document.getElementById('editComment').value  = s.comment  || '';
+    document.getElementById('editStudentReg').textContent = s.reg;
+    document.getElementById('editAdded').value = s.added || '';
+    document.getElementById('editComment').value = s.comment || '';
     document.getElementById('editFollowBus').value = s.followBus || '';
-    document.getElementById('editBusLoc').value   = s.busLoc   || '';
+    document.getElementById('editBusLoc').value = s.busLoc || '';
     document.getElementById('editAddedBus').value = s.addedBus || '';
     document.getElementById('studentEditOverlay').classList.add('show');
 }
@@ -3773,46 +4141,50 @@ function closeStudentEdit() {
 }
 
 async function saveStudentEdit() {
-    const idx  = parseInt(document.getElementById('editStudentIdx').value, 10);
-    const s    = myGroupCache.students[idx];
+    const idx = parseInt(document.getElementById('editStudentIdx').value, 10);
+    const s = myGroupCache.students[idx];
     if (!s) return;
-    const btn  = document.getElementById('saveStudentEditBtn');
+    const btn = document.getElementById('saveStudentEditBtn');
     btn.disabled = true; btn.textContent = 'Saving…';
-    const added     = document.getElementById('editAdded').value;
-    const comment   = document.getElementById('editComment').value.trim();
+    const added = document.getElementById('editAdded').value;
+    const comment = document.getElementById('editComment').value.trim();
     const followBus = document.getElementById('editFollowBus').value;
-    const busLoc    = document.getElementById('editBusLoc').value.trim();
-    const addedBus  = document.getElementById('editAddedBus').value;
+    const busLoc = document.getElementById('editBusLoc').value.trim();
+    const addedBus = document.getElementById('editAddedBus').value;
+    let data = null;
     try {
         const url = SCRIPT_URL + '?action=update_student_grouping'
-            + '&token='       + encodeURIComponent(SCRIPT_TOKEN)
-            + '&adminName='   + encodeURIComponent(admin.name)
-            + '&password='    + encodeURIComponent(getStoredPass())
-            + '&tabName='     + encodeURIComponent(myGroupCache.tabName)
-            + '&rowIndex='    + encodeURIComponent(s.rowIndex)
+            + '&token=' + encodeURIComponent(SCRIPT_TOKEN)
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password=' + encodeURIComponent(getStoredPass())
+            + '&tabName=' + encodeURIComponent(s.tabName || myGroupCache.tabName)
+            + '&groupNum=' + encodeURIComponent(s.groupNum || '')
+            + '&rowIndex=' + encodeURIComponent(s.rowIndex)
+            + '&reg=' + encodeURIComponent(s.reg)
             + '&studentName=' + encodeURIComponent(s.firstName + ' ' + s.lastName)
-            + '&added='       + encodeURIComponent(added)
-            + '&comment='     + encodeURIComponent(comment)
-            + '&followBus='   + encodeURIComponent(followBus)
-            + '&busLoc='      + encodeURIComponent(busLoc)
-            + '&addedBus='    + encodeURIComponent(addedBus)
+            + '&added=' + encodeURIComponent(added)
+            + '&comment=' + encodeURIComponent(comment)
+            + '&followBus=' + encodeURIComponent(followBus)
+            + '&busLoc=' + encodeURIComponent(busLoc)
+            + '&addedBus=' + encodeURIComponent(addedBus)
             + '&cb=' + Date.now();
-        const res  = await fetch(url);
-        const data = await res.json();
-        if (data.status === 'success') {
-            // Update cache
-            s.added = added; s.comment = comment; s.followBus = followBus;
-            s.busLoc = busLoc; s.addedBus = addedBus;
-            showToast('Updated.', 'ok');
-            closeStudentEdit();
-            renderMyGroup(myGroupCache.students);
-        } else {
-            showToast(data.message || 'Update failed.', 'err');
-        }
-    } catch(e) {
+        const res = await fetch(url);
+        data = await res.json();
+    } catch (e) {
         showToast('Connection error. Try again.', 'err');
     }
     btn.disabled = false; btn.textContent = 'Save';
+    if (!data) return;
+    if (data.status !== 'success') { showToast(data.message || 'Update failed.', 'err'); return; }
+
+    // Update cache — the server may have found the student on a moved row or renamed tab
+    s.added = added; s.comment = comment; s.followBus = followBus;
+    s.busLoc = busLoc; s.addedBus = addedBus;
+    if (data.tabName)  s.tabName  = data.tabName;
+    if (data.rowIndex) s.rowIndex = data.rowIndex;
+    showToast('Updated.', 'ok');
+    closeStudentEdit();
+    rerenderMyGroups();
 }
 
 // ── Grouping Summary (Super Admin) ────────────────────────────
@@ -3961,6 +4333,7 @@ async function saveGroupAdmin() {
     saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
     try {
         const url  = UNIFIED_SCRIPT_URL + '?action=update_group_config'
+            + '&token='         + encodeURIComponent(SCRIPT_TOKEN)
             + '&adminName='     + encodeURIComponent(admin.name)
             + '&password='      + encodeURIComponent(getStoredPass())
             + '&group='         + encodeURIComponent(groupNum)
