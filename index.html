@@ -361,6 +361,31 @@
         #statusMessage.success { background: var(--success-bg); color: var(--success-text); display: block; }
         #statusMessage.error   { background: var(--error-bg);   color: var(--error-text);   display: block; }
         #statusMessage.warning { background: var(--warning-bg); color: var(--warning-text); display: block; }
+
+        /* ── Saturday attendance summary ── */
+        .sat-summary {
+            display: none;
+            text-align: center;
+            padding: 8px 0 4px;
+            cursor: pointer;
+            outline: none;
+            animation: fadeSlideIn 0.3s ease both;
+        }
+        .sat-summary.show { display: block; }
+        .sat-summary .identity-avatar { margin: 0 auto 10px; }
+        .sat-summary-name { font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1.3; margin-bottom: 8px; }
+        .sat-summary-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 22px 0 6px; }
+        .sat-summary-count { font-family: 'DM Mono', monospace; font-size: 34px; font-weight: 500; color: var(--text-primary); line-height: 1.1; }
+        .sat-summary-of { font-size: 18px; color: var(--text-muted); }
+        .sat-summary-bar { height: 10px; background: var(--bg-surface); border-radius: 99px; overflow: hidden; margin: 14px 0 16px; }
+        .sat-summary-fill { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width 0.8s ease; }
+        .sat-summary-elig { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; padding: 6px 14px; border-radius: 99px; }
+        .sat-summary-elig.elig-ok     { background: var(--success-bg); color: var(--success-text); }
+        .sat-summary-elig.elig-w      { background: #EDF3FF; color: #1A3A8A; }
+        .sat-summary-elig.elig-makeup { background: var(--warning-bg); color: var(--warning-text); }
+        .sat-summary-elig.elig-not    { background: var(--error-bg); color: var(--error-text); }
+        .sat-summary-closing { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 18px; }
+        .sat-summary-hint { font-size: 11px; color: var(--text-muted); margin-top: 14px; }
     </style>
 </head>
 <body>
@@ -497,6 +522,23 @@
                     <span id="btnLabel">Sign In Now</span>
                 </button>
             </div>
+        </div>
+
+        <!-- Saturday attendance summary — shown after a successful Saturday sign-in / sign-out -->
+        <div class="sat-summary" id="satSummary" role="dialog" aria-labelledby="satSummaryName" tabindex="-1">
+            <div class="identity-avatar" id="satSummaryAvatar">?</div>
+            <div class="sat-summary-name" id="satSummaryName"></div>
+            <span class="session-tag tag-event" id="satSummaryEvent"></span>
+            <div class="sat-summary-eyebrow">Your current attendance</div>
+            <div class="sat-summary-count">
+                <span id="satSummaryActual">0</span><span class="sat-summary-of"> / <span id="satSummaryExpected">0</span></span>
+            </div>
+            <div class="sat-summary-bar" id="satSummaryBar" role="progressbar" aria-label="Attendance progress" aria-valuemin="0">
+                <div class="sat-summary-fill" id="satSummaryFill"></div>
+            </div>
+            <span class="sat-summary-elig" id="satSummaryElig"></span>
+            <p class="sat-summary-closing" id="satSummaryClosing"></p>
+            <div class="sat-summary-hint">Tap anywhere to continue</div>
         </div>
 
         <div id="statusMessage"></div>
@@ -988,6 +1030,70 @@ form.addEventListener('submit', async function(e) {
 });
 
 // ════════════════════════════════════════════════════════════
+//  SATURDAY ATTENDANCE SUMMARY
+//  Labels come from the server (same rules as the Computation tab).
+// ════════════════════════════════════════════════════════════
+const satSummary     = document.getElementById('satSummary');
+const previewStrip   = document.querySelector('.preview-strip');
+const SAT_SUMMARY_MS = 12000;
+const ELIG_CLASS     = { 'ELIGIBLE': 'elig-ok', 'ELIGIBLE-W': 'elig-w', 'MAKE-UP': 'elig-makeup', 'NOT ELIGIBLE': 'elig-not' };
+let satSummaryTimer  = null;
+
+function showSatSummary(student, eventType, data) {
+    const isOut    = eventType === 'SAT-OUT';
+    const actual   = data.actualAttendance;
+    const expected = data.expectedAttendance;
+    const first    = (student && student.firstName) || '';
+    const last     = (student && student.lastName)  || '';
+
+    document.getElementById('satSummaryAvatar').textContent = ((first.charAt(0) + last.charAt(0)) || '?').toUpperCase();
+    document.getElementById('satSummaryName').textContent   = (first + ' ' + last).trim();
+    const ev = document.getElementById('satSummaryEvent');
+    ev.textContent = isOut ? 'Signed out' : 'Signed in';
+    ev.className   = 'session-tag tag-event ' + (isOut ? 'sat-out' : 'sat-in');
+    document.getElementById('satSummaryActual').textContent   = actual;
+    document.getElementById('satSummaryExpected').textContent = expected;
+
+    const bar  = document.getElementById('satSummaryBar');
+    const fill = document.getElementById('satSummaryFill');
+    bar.setAttribute('aria-valuemax', expected);
+    bar.setAttribute('aria-valuenow', actual);
+    fill.style.width = '0';
+
+    const elig = document.getElementById('satSummaryElig');
+    elig.textContent   = data.eligibility || '';
+    elig.className     = 'sat-summary-elig ' + (ELIG_CLASS[data.eligibility] || '');
+    elig.style.display = ELIG_CLASS[data.eligibility] ? '' : 'none';
+
+    document.getElementById('satSummaryClosing').textContent = isOut
+        ? 'Thank you for staying to the end. God bless you.'
+        : 'Have a blessed session today.';
+
+    previewStrip.style.display = 'none';
+    form.style.display         = 'none';
+    satSummary.classList.add('show');
+    satSummary.focus();
+    requestAnimationFrame(function() { fill.style.width = (Math.min(actual / expected, 1) * 100) + '%'; });
+
+    clearTimeout(satSummaryTimer);
+    satSummaryTimer = setTimeout(hideSatSummary, SAT_SUMMARY_MS);
+}
+
+function hideSatSummary() {
+    if (!satSummary.classList.contains('show')) return;
+    clearTimeout(satSummaryTimer);
+    satSummaryTimer = null;
+    satSummary.classList.remove('show');
+    previewStrip.style.display = '';
+    form.style.display         = 'block';
+}
+
+satSummary.addEventListener('click', hideSatSummary);
+satSummary.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') { e.preventDefault(); hideSatSummary(); }
+});
+
+// ════════════════════════════════════════════════════════════
 //  STAGE 2 — FINAL SIGN-IN (Sign In / Sign Out button)
 // ════════════════════════════════════════════════════════════
 checkinBtn.addEventListener('click', async function() {
@@ -1015,6 +1121,7 @@ checkinBtn.addEventListener('click', async function() {
         const data     = await response.json();
 
         if (data.status === 'success') {
+            const summaryStudent = verifiedStudent;
             const label = currentEvent === 'SAT-OUT' ? 'Checked out' : 'Checked in';
             // Hide identity card and reset full form for next student
             identityCard.classList.remove('show');
@@ -1038,6 +1145,10 @@ checkinBtn.addEventListener('click', async function() {
             confirmBtn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 2.5-5 6-5s6 2 6 5"/></svg></span><span>Confirm Identity</span>';
             checkinBtn.disabled  = false;
             checkinBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 7 12 13 4"/></svg><span>' + (currentEvent === 'SAT-OUT' ? 'Sign Out Now' : 'Sign In Now') + '</span>';
+            // Saturday only: attendance standing (the server adds these fields to SAT-IN / SAT-OUT replies)
+            if (currentEvent.indexOf('SAT') === 0 && typeof data.actualAttendance === 'number' && data.expectedAttendance > 0) {
+                showSatSummary(summaryStudent, currentEvent, data);
+            }
         } else {
             // Error — show message, hide identity card, reset to Stage 1 so they can try again
             identityCard.classList.remove('show');
