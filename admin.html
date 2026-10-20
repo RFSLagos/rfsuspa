@@ -578,6 +578,34 @@ input:focus, select:focus { outline: none; }
     display: none; white-space: pre-wrap;
 }
 .upload-result.show { display: block; }
+.upload-result.warn { background: var(--amber-soft); color: var(--amber-text); }
+/* Score Upload: topics from the Assessment Plan + Check Plan */
+.topics-error {
+    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 10px 0 14px; padding: 10px 12px; border-radius: var(--r-sm);
+    background: var(--amber-soft); color: var(--amber-text); font-size: 12.5px;
+}
+.topics-error.show { display: flex; }
+.plan-result {
+    display: none; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--r-sm);
+    background: var(--line-soft); color: var(--ink-2); font-size: 12.5px;
+}
+.plan-result.show { display: block; }
+.plan-result.ok  { background: var(--green-soft); color: var(--green-deep); }
+.plan-result.bad { background: var(--rose-soft); color: var(--rose-text); }
+.plan-result ul { margin: 6px 0 0 18px; padding: 0; }
+.plan-result li { margin: 2px 0; }
+.plan-result li.err  { color: var(--rose-text); }
+.plan-result li.warn { color: var(--amber-text); }
+.rpt-warn {
+    margin-bottom: 12px; padding: 10px 12px; border-radius: var(--r-sm);
+    background: var(--amber-soft); color: var(--amber-text); font-size: 12.5px;
+}
+.sun-warn {
+    display: none; margin-top: 8px; padding: 8px 10px; border-radius: var(--r-sm);
+    background: var(--amber-soft); color: var(--amber-text); font-size: 12.5px;
+}
+.sun-warn.show { display: block; }
 
 /* PERMISSIONS */
 .perm-list { display: flex; flex-direction: column; gap: 6px; }
@@ -1602,6 +1630,7 @@ input:focus, select:focus { outline: none; }
                     </div>
                     <div class="card-body">
                         <div class="status-row" id="sunStatus">Load a session to see Sunday status</div>
+                        <div class="sun-warn" id="sunWarn" role="alert"></div>
                         <div class="btn-row">
                             <button class="btn btn-primary btn-sm" id="btnSunOpen" onclick="sunOpen()" disabled>Open Window</button>
                             <button class="btn btn-danger btn-sm" id="btnSunClose" onclick="sunClose()" disabled>Close Window</button>
@@ -1950,23 +1979,30 @@ input:focus, select:focus { outline: none; }
                 <!-- Tab 2 — Score Upload -->
                 <div class="assess-tab-panel" id="panelScores">
                 <div class="card">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Score Upload</div>
+                            <div class="card-sub">Types and topics come from the Assessment Plan tab in Master Config.</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" id="btnCheckPlan" onclick="checkPlan()" style="white-space:nowrap;">Check Plan</button>
+                    </div>
                     <div class="card-body">
+                        <div class="plan-result" id="planResult" aria-live="polite"></div>
                         <div class="sel-grid">
                             <div class="sel-field">
                                 <label>Assessment Type</label>
-                                <select id="scoreType" class="input" onchange="updateTopicList()">
-                                    <option value="TEST">Test</option>
-                                    <option value="PROJECT">Project</option>
-                                    <option value="MID-WRITTEN">Mid-course Written</option>
-                                    <option value="MID-MCQ">Mid-course MCQ</option>
-                                    <option value="EXAM-WRITTEN">Final Exam Written</option>
-                                    <option value="EXAM-MCQ">Final Exam MCQ</option>
+                                <select id="scoreType" class="input" onchange="updateTopicList()" disabled>
+                                    <option value="">Loading topics…</option>
                                 </select>
                             </div>
                             <div class="sel-field">
                                 <label>Topic</label>
-                                <select id="scoreTopic" class="input"></select>
+                                <select id="scoreTopic" class="input" disabled></select>
                             </div>
+                        </div>
+                        <div class="topics-error" id="topicsError" role="alert">
+                            <span>Couldn’t load topics.</span>
+                            <button class="btn btn-outline btn-sm" onclick="fetchTopics()">Tap to retry</button>
                         </div>
 
                         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
@@ -2282,10 +2318,10 @@ input:focus, select:focus { outline: none; }
 // ============================================================
 //  ENDPOINTS — keep these in sync with your deployments
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcO9-tILi3s-5Pi6rcfs1AfjszvYJ8Eiuo77L_lNaMD6NxsL2mCEF4u222yh1rlODV2Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwz8fyo-RMY5L_0R9ec792DG3STMHAuV8zidWV-yPhtGVRftly94Mei-9ZemLYvvqPg/exec';
 const SCRIPT_TOKEN = 'RFS_USpA_ADMIN@2026'; // Must match API_TOKEN in scripts
-const UNIFIED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3Jk26H9JCwmBLRxBfrNvxeUmN9YfynL3Vo3hLR_1VfBMv2tLnYLQZveO9MzG7GmnT-w/exec';
-const EXAM_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxoUinukCM3Ym388jpFSoAGFlZvkQKxk8rKE6GtqgW36d0e3uTW3mw4P-AatupR-VcptQ/exec';
+const UNIFIED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTp9fJkG9DrccGqvd96RYNU806PuE3ZzkoWimta91mD-jFCirRrIquhgW8dTr0Iqo/exec';
+const EXAM_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwty4Y7sigqznjwwMAHSUgYkvPYN1myLxV5CO9gn6Qvu3DgH8X05ZLJBaZN0AYNsyM/exec';
 
 // Live Activity Log poll interval (ms)
 const LOG_POLL_MS = 60000;
@@ -2432,7 +2468,7 @@ function switchPage(name, btn) {
     if (name === 'dashboard')   loadDashboard();
     if (name === 'attendance') { switchAttTab('student'); loadAttendance(); }
     if (name === 'saturday')    { if (sessionData) updateSaturdayUI(sessionData); }
-    if (name === 'scores')      updateTopicList();
+    if (name === 'scores')      fetchTopics();
     if (name === 'permissions') { updateExcuseForm(); loadExcuses(); }
     if (name === 'grouping') {
         var isGroupingSuper = admin && admin.role === 'Super Admin';
@@ -2642,6 +2678,13 @@ function updateSundayUI(data) {
     const btnC   = document.getElementById('btnSunClose');
     document.getElementById('btnSunSaveCode').disabled = false;
 
+    // Invalid window times in Master Config — shown in every state so it is seen before Sunday
+    const warnEl = document.getElementById('sunWarn');
+    if (warnEl && 'sunWindowError' in data) {
+        warnEl.textContent = data.sunWindowError ? '⚠ ' + data.sunWindowError : '';
+        warnEl.classList.toggle('show', !!data.sunWindowError);
+    }
+
     if (data.testMode) {
         // Test mode — admin toggled it on
         pill.textContent = 'Test Mode'; pill.className = 'pill pill-test';
@@ -2650,7 +2693,7 @@ function updateSundayUI(data) {
     } else if (data.sunForceOpen) {
         // Admin explicitly opened it
         pill.textContent = 'Open'; pill.className = 'pill pill-open';
-        const today = new Date().getDay(); // 0=Sun, 6=Sat
+        const today = (typeof data.dayOfWeek === 'number') ? data.dayOfWeek : new Date().getDay(); // 0=Sun (Lagos, from the server)
         if (today !== 0) {
             const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
             status.innerHTML = 'Window opened by admin. <span style="color:var(--amber,#C8960C);font-weight:600;">'
@@ -2669,7 +2712,7 @@ function updateSundayUI(data) {
     } else {
         // Fully closed
         pill.textContent = 'Closed'; pill.className = 'pill pill-closed';
-        status.textContent = 'Window is closed.';
+        status.textContent = data.sunMessage || 'Window is closed.';
         btnO.disabled = false; btnC.disabled = true;
     }
 }
@@ -3097,50 +3140,146 @@ function renderLog(logs) {
 // ============================================================
 //  SCORES — CSV upload
 // ============================================================
-// Topics fetched from unified script after login — do not hardcode here
+// Types and topics come from get_topics (the Active rows of the Assessment Plan tab) — never hardcoded.
+// No stale fallback list: if get_topics fails, the card shows a retry button and Upload stays disabled.
 let TEST_TOPICS       = [];
 let ASSIGNMENT_TOPICS = [];
-let EXAM_TOPIC        = 'Final Exam';
+let EXAM_TOPIC        = '';
+let SCORE_TYPES       = [];      // [{type, label, topics, items:[{topic, max}]}]
+let topicsState       = 'idle';  // idle | loading | ok | error
 let csvFileData = null;
 
+function topicsReady() { return topicsState === 'ok' && SCORE_TYPES.length > 0; }
+
 async function fetchTopics() {
+    topicsState = 'loading';
+    renderScoreTypes();
     try {
         const url  = UNIFIED_SCRIPT_URL + '?action=get_topics&cb=' + Date.now();
         const res  = await fetch(url);
         const data = await res.json();
-        if (data.status === 'success') {
-            TEST_TOPICS       = data.testTopics       || TEST_TOPICS;
-            ASSIGNMENT_TOPICS = data.assignmentTopics || ASSIGNMENT_TOPICS;
-            EXAM_TOPIC        = data.examTopic        || EXAM_TOPIC;
-            updateTopicList();
-        }
-    } catch(e) { /* silent — falls back to empty arrays */ }
+        if (data.status !== 'success' || !Array.isArray(data.extraTypes)) throw new Error(data.message || 'Bad reply');
+        TEST_TOPICS       = data.testTopics       || [];
+        ASSIGNMENT_TOPICS = data.assignmentTopics || [];
+        EXAM_TOPIC        = data.examTopic        || '';
+        SCORE_TYPES       = data.extraTypes.filter(function(t) { return t.topics && t.topics.length; });
+        topicsState = 'ok';
+    } catch(e) {
+        SCORE_TYPES = [];
+        topicsState = 'error';
+    }
+    renderScoreTypes();
+}
+
+function addOption(sel, value, text) {
+    const o = document.createElement('option');
+    o.value = value; o.textContent = text; sel.appendChild(o);
+}
+
+function renderScoreTypes() {
+    const typeSel = document.getElementById('scoreType');
+    const prev = typeSel.value;
+    typeSel.innerHTML = '';
+    if (topicsReady()) {
+        SCORE_TYPES.forEach(function(t) { addOption(typeSel, t.type, t.label || t.type); });
+        if (SCORE_TYPES.some(function(t) { return t.type === prev; })) typeSel.value = prev;
+    }
+    updateTopicList();
 }
 
 function updateTopicList() {
-    const type   = document.getElementById('scoreType').value;
-    const sel    = document.getElementById('scoreTopic');
+    const typeSel = document.getElementById('scoreType');
+    const sel     = document.getElementById('scoreTopic');
+    const prev    = sel.value;
+    document.getElementById('topicsError').classList.toggle('show', topicsState === 'error');
     sel.innerHTML = '';
-    // USpA types — map type to topics
-    const topicMap = {
-        'TEST':         TEST_TOPICS.length ? TEST_TOPICS : [],
-        'PROJECT':      ['Project'],
-        'MID-WRITTEN':  ['Mid-course Written'],
-        'MID-MCQ':      ['Mid-course MCQ'],
-        'EXAM-WRITTEN': ['Final Exam Written'],
-        'EXAM-MCQ':     ['Final Exam MCQ'],
-        'ASSIGNMENT':   ASSIGNMENT_TOPICS.length ? ASSIGNMENT_TOPICS : [],
-        'EXAM':         [EXAM_TOPIC || 'Final Exam']
-    };
-    const topics = topicMap[type] || [type];
-    if (!topics.length) {
-        const o = document.createElement('option');
-        o.value = ''; o.textContent = 'Loading topics…'; sel.appendChild(o); return;
+    if (!topicsReady()) {
+        const msg = topicsState === 'error' ? 'Couldn’t load topics'
+                  : topicsState === 'ok'    ? 'No active topics in the Assessment Plan'
+                  : 'Loading topics…';
+        typeSel.innerHTML = '';
+        addOption(typeSel, '', msg);
+        addOption(sel, '', msg);
+        typeSel.disabled = true; sel.disabled = true;
+        updateUploadButton();
+        return;
     }
-    topics.forEach(function(t) {
-        const o = document.createElement('option');
-        o.value = t; o.textContent = t; sel.appendChild(o);
+    typeSel.disabled = false; sel.disabled = false;
+    const t = SCORE_TYPES.find(function(x) { return x.type === typeSel.value; }) || SCORE_TYPES[0];
+    const items = (t.items && t.items.length) ? t.items : t.topics.map(function(tp) { return { topic: tp }; });
+    items.forEach(function(it) {
+        addOption(sel, it.topic, it.topic + (it.max !== undefined ? '  (out of ' + it.max + ')' : ''));
     });
+    if (items.some(function(it) { return it.topic === prev; })) sel.value = prev;
+    updateUploadButton();
+}
+
+function updateUploadButton() {
+    const btn = document.getElementById('btnUploadScores');
+    if (btn && btn.textContent !== 'Uploading…') btn.disabled = !(csvFileData && topicsReady());
+}
+
+// ── Check Plan (read-only) ───────────────────────────────────
+async function checkPlan() {
+    const box = document.getElementById('planResult');
+    const btn = document.getElementById('btnCheckPlan');
+    const cls = document.getElementById('selClass').value;
+    const yr  = document.getElementById('selYear').value;
+    const st  = document.getElementById('selStream').value;
+    btn.disabled = true;
+    box.className = 'plan-result show';
+    box.textContent = 'Checking the Assessment Plan…';
+    try {
+        let url = UNIFIED_SCRIPT_URL
+            + '?action=admin_check_plan'
+            + '&token='     + encodeURIComponent(SCRIPT_TOKEN)
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass());
+        if (cls && yr && st) url += '&class=' + encodeURIComponent(cls) + '&year=' + encodeURIComponent(yr) + '&stream=' + encodeURIComponent(st);
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.status !== 'success') {
+            box.className = 'plan-result show bad';
+            box.textContent = data.message === 'Unknown action.'
+                ? 'Check Plan needs the updated unified script. Paste the new version and redeploy.'
+                : (data.message || 'Check failed.');
+        } else {
+            renderPlanCheck(data);
+            fetchTopics(); // the plan may have changed — refresh the dropdowns too
+        }
+    } catch(e) {
+        box.className = 'plan-result show bad';
+        box.textContent = 'Connection error. Try again.';
+    }
+    btn.disabled = false;
+}
+
+function renderPlanCheck(data) {
+    const box   = document.getElementById('planResult');
+    const s     = data.summary || {};
+    const comps = s.components || [];
+    const nItems = comps.reduce(function(a, c) { return a + c.items.length; }, 0);
+    const errors = data.errors || [], warnings = data.warnings || [];
+    let html;
+    if (data.ok) {
+        html = '<strong>Plan OK</strong> — ' + nItems + ' active items in ' + comps.length + ' components ('
+            + comps.map(function(c) { return escHtml(c.name) + ' ' + c.weight; }).join(' · ')
+            + '), weights total ' + escHtml(s.totalWeight) + '. Test average: ' + escHtml(s.testAverageMode) + '.';
+    } else {
+        const blocks = [];
+        if (data.source && data.source.plan === 'fallback') blocks.push('marks');
+        if (data.source && data.source.attendance === 'fallback') blocks.push('attendance');
+        html = '<strong>' + errors.length + ' problem' + (errors.length === 1 ? '' : 's') + ' to fix.</strong> Until ' + (errors.length === 1 ? 'it is' : 'they are') + ' fixed, computation uses the built-in '
+            + (blocks.join(' and ') || 'settings') + ' settings.';
+    }
+    if (errors.length || warnings.length) {
+        html += '<ul>'
+            + errors.map(function(e) { return '<li class="err">' + escHtml(e) + '</li>'; }).join('')
+            + warnings.map(function(w) { return '<li class="warn">' + escHtml(w) + '</li>'; }).join('')
+            + '</ul>';
+    }
+    box.className = 'plan-result show ' + (data.ok ? 'ok' : 'bad');
+    box.innerHTML = html;
 }
 
 function handleDragOver(e)  { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
@@ -3162,8 +3301,9 @@ function readCSVFile(file) {
         const rowCount = Math.max(0, lines.length - 1);
         const result = document.getElementById('uploadResult');
         result.textContent = '✓ File loaded — ' + rowCount + ' rows detected (excluding header). Click "Upload Scores" to proceed.';
+        result.classList.remove('warn');
         result.classList.add('show');
-        document.getElementById('btnUploadScores').disabled = false;
+        updateUploadButton();
         document.getElementById('uploadZone').querySelector('.upload-zone-title').textContent = file.name;
     };
     reader.readAsText(file);
@@ -3171,6 +3311,7 @@ function readCSVFile(file) {
 
 async function uploadScores() {
     if (!csvFileData) { showToast('Please select a CSV file first', 'err'); return; }
+    if (!topicsReady() || !document.getElementById('scoreTopic').value) { showToast('Topics not loaded — tap retry first', 'err'); return; }
     const cls   = document.getElementById('selClass').value;
     const yr    = document.getElementById('selYear').value;
     const st    = document.getElementById('selStream').value;
@@ -3199,17 +3340,25 @@ async function uploadScores() {
             showToast(data.message, 'ok');
             const result = document.getElementById('uploadResult');
             let msg = '✓ ' + data.written + ' score(s) uploaded for ' + topic;
+            if (data.maxScore !== undefined) msg += ' (out of ' + data.maxScore + ')';
             if (data.skipped > 0) msg += ' · ' + data.skipped + ' row(s) skipped';
-            if (data.errors && data.errors.length) msg += '\n⚠ ' + data.errors.join('\n');
-            result.textContent = msg; result.classList.add('show');
+            if (data.errors && data.errors.length) msg += '\n⚠ ' + data.errors.join('\n⚠ ');
+            if (data.warnings && data.warnings.length) msg += '\n⚠ ' + data.warnings.join('\n⚠ ');
+            result.textContent = msg;
+            result.classList.toggle('warn', data.skipped > 0 || !!(data.warnings && data.warnings.length));
+            result.classList.add('show');
             csvFileData = null;
             document.getElementById('uploadZone').querySelector('.upload-zone-title').textContent = 'Click to upload CSV or drag and drop';
         } else {
-            showToast(data.message || 'Upload failed', 'err');
+            showToast('Upload refused', 'err');
+            const result = document.getElementById('uploadResult');
+            result.textContent = '✗ ' + (data.message || 'Upload failed');
+            result.classList.add('show', 'warn');
         }
     } catch(e) { showToast('Connection error', 'err'); }
 
-    btn.disabled = false; btn.textContent = 'Upload Scores';
+    btn.textContent = 'Upload Scores';
+    updateUploadButton();
 }
 
 // ============================================================
@@ -3289,6 +3438,7 @@ async function loadExcuses() {
 //  REPORT
 // ============================================================
 let reportData = null;
+let reportPlan = null;   // data.plan from admin_compute_report (column description), null on an older backend
 
 async function generateReport() {
     const cls = document.getElementById('selClass').value;
@@ -3312,6 +3462,7 @@ async function generateReport() {
         const data = await res.json();
         if (data.status !== 'success') { wrap.innerHTML = '<div class="att-empty">' + escHtml(data.message || 'Failed to generate report.') + '</div>'; return; }
         reportData = data.results;
+        reportPlan = data.plan || null;
         renderReport(data);
         showToast('Report generated — ' + data.total + ' students', 'ok');
     } catch(e) {
@@ -3319,6 +3470,20 @@ async function generateReport() {
         showToast('Connection error', 'err');
     }
 }
+
+// Component mark columns from the plan; an older backend (no data.plan) → the USpA fields it really returns
+function reportComponents(plan) {
+    if (plan && plan.components) return plan.components.map(function(c) {
+        return { label: c.name + ' /' + c.weight, get: function(r) { return (r.componentMarks || {})[c.name]; } };
+    });
+    return [
+        { label: 'Tests /10',      get: function(r) { return r.testMarks; } },
+        { label: 'Project /10',    get: function(r) { return r.projectMarks; } },
+        { label: 'Mid-course /30', get: function(r) { return r.midMarks; } },
+        { label: 'Exam /50',       get: function(r) { return r.examMarks; } }
+    ];
+}
+function fmtMark(v) { return (typeof v === 'number' && isFinite(v)) ? String(Math.round(v * 100) / 100) : '—'; }
 
 function renderReport(data) {
     const results = data.results || [];
@@ -3331,8 +3496,11 @@ function renderReport(data) {
     document.getElementById('reportSummary').classList.add('show');
 
     const wrap = document.getElementById('reportTableWrap');
-    if (!results.length) { wrap.innerHTML = '<div class="att-empty">No active students found for this stream.</div>'; return; }
+    const warn = (data.warnings && data.warnings.length)
+        ? '<div class="rpt-warn">⚠ ' + data.warnings.map(escHtml).join('<br>⚠ ') + '</div>' : '';
+    if (!results.length) { wrap.innerHTML = warn + '<div class="att-empty">No active students found for this stream.</div>'; return; }
 
+    const comps = reportComponents(data.plan);
     const rows = results.map(function(r) {
         const eligBadge = '<span class="rpt-badge ' + r.eligibility.replace(/\s/g,'-') + '">' + escHtml(r.eligibility) + '</span>';
         const statBadge = '<span class="rpt-badge ' + r.finalStatus + '">' + escHtml(r.finalStatus) + '</span>';
@@ -3342,38 +3510,61 @@ function renderReport(data) {
             + '<td>' + r.attPts + '</td>'
             + '<td>' + r.attPct + '%</td>'
             + '<td>' + eligBadge + '</td>'
-            + '<td>' + r.testAvg.toFixed(1) + '</td>'
-            + '<td>' + r.examScore + '</td>'
-            + '<td>' + r.grandTotal.toFixed(1) + '</td>'
+            + comps.map(function(c) { return '<td>' + fmtMark(c.get(r)) + '</td>'; }).join('')
+            + '<td>' + fmtMark(r.grandTotal) + '</td>'
             + '<td>' + statBadge + '</td>'
             + '</tr>';
     }).join('');
-    wrap.innerHTML = '<div class="rpt-table-wrap"><table class="rpt-table">'
-        + '<thead><tr><th>Reg No.</th><th>Name</th><th>Attended</th><th>Att %</th>'
-        + '<th>Eligibility</th><th>Test Avg</th><th>Exam</th><th>Total</th><th>Status</th></tr></thead>'
+    const totalLabel = (data.plan && data.plan.totalWeight) ? 'Total /' + data.plan.totalWeight : 'Total';
+    wrap.innerHTML = warn + '<div class="rpt-table-wrap"><table class="rpt-table">'
+        + '<thead><tr><th>Reg No.</th><th>Name</th><th>Attended</th><th>Att %</th><th>Eligibility</th>'
+        + comps.map(function(c) { return '<th>' + escHtml(c.label) + '</th>'; }).join('')
+        + '<th>' + escHtml(totalLabel) + '</th><th>Status</th></tr></thead>'
         + '<tbody>' + rows + '</tbody></table></div>'
         + '<div style="margin-top:12px; text-align:right;">'
         + '<button class="btn btn-outline btn-sm" onclick="downloadReport()">Download CSV</button>'
         + '</div>';
 }
 
+function csvCell(v) {
+    const s = (v === null || v === undefined) ? '' : String(v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+// Every plan item (raw score) and every component mark — columns come from the plan, not a fixed list
 function downloadReport() {
     if (!reportData || !reportData.length) return;
-    const TEST_TOPICS_SHORT = TEST_TOPICS.map(function(t) { return t.split(' ').map(function(w){return w[0];}).join('').substring(0,6); });
-    const headers = ['Reg Number','Last Name','First Name','Attended','Excused','Att%','Eligibility',
-        ...TEST_TOPICS_SHORT,'Test Avg','AS1','AS2','AS3','Assign Marks',
-        'Exam Score','Att Marks','Exam Marks','Test Marks','Grand Total','Final Status'];
+    const plan  = reportPlan;
+    const comps = reportComponents(plan);
+    let itemCols;
+    if (plan && plan.components) {
+        itemCols = [];
+        plan.components.forEach(function(c) {
+            c.items.forEach(function(it) {
+                itemCols.push({ label: it.topic + ' /' + it.max + (it.counted === false ? ' (not counted)' : ''),
+                                get: function(r) { const v = (r.itemScores || {})[it.key]; return v === undefined ? '' : v; } });
+            });
+        });
+    } else {
+        // Older backend: the raw USpA fields it returns
+        itemCols = TEST_TOPICS.map(function(t, i) { return { label: t + ' /10', get: function(r) { return (r.testScores || [])[i]; } }; })
+            .concat([['Project', 'projectScore'], ['Mid-course Written', 'midWritten'], ['Mid-course MCQ', 'midMCQ'],
+                     ['Final Exam Written', 'examWritten'], ['Final Exam MCQ', 'examMCQ']]
+                .map(function(x) { return { label: x[0], get: function(r) { return r[x[1]]; } }; }));
+    }
+    const headers = ['Reg Number', 'Last Name', 'First Name', 'Other Name', 'Attended', 'Excused', 'Expected', 'Att%', 'Eligibility']
+        .concat(itemCols.map(function(c) { return c.label; }))
+        .concat(comps.map(function(c) { return c.label; }))
+        .concat([(plan && plan.totalWeight) ? 'Grand Total /' + plan.totalWeight : 'Grand Total', 'Final Status']);
+    const expected = plan ? plan.expectedAttendance : '';
     const rows = reportData.map(function(r) {
-        return [
-            r.reg, r.lastName, r.firstName, r.attPts, r.excused, r.attPct, r.eligibility,
-            ...(r.testScores || [0,0,0,0,0,0,0,0,0]),
-            r.testAvg,
-            ...(r.assignScores || [0,0,0]),
-            r.assignMarks,
-            r.examScore, r.attMarks, r.examMarks, r.testMarks, r.grandTotal, r.finalStatus
-        ].join(',');
+        return [r.reg, r.lastName, r.firstName, r.otherName || '', r.attPts, r.excused, expected, r.attPct, r.eligibility]
+            .concat(itemCols.map(function(c) { return c.get(r); }))
+            .concat(comps.map(function(c) { return c.get(r); }))
+            .concat([r.grandTotal, r.finalStatus])
+            .map(csvCell).join(',');
     });
-    const csv  = [headers.join(','), ...rows].join('\n');
+    const csv  = [headers.map(csvCell).join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a    = document.createElement('a');
     a.href     = URL.createObjectURL(blob);
@@ -3435,7 +3626,9 @@ async function runQAQC() {
         closeQAQCConfirm();
 
         if (data.status === 'success') {
-            showToast(data.message || 'Computation complete ✓', 'ok');
+            const nWarn = (data.warnings || []).length;
+            if (nWarn) showToast((data.message || 'Computation complete') + ' — ' + nWarn + ' warning(s): run Check Plan (Score Upload)', 'warn');
+            else showToast(data.message || 'Computation complete ✓', 'ok');
         } else {
             showToast(data.message || 'Computation failed. Please try again.', 'err');
         }
@@ -3841,6 +4034,7 @@ function switchAssessTab(tab) {
     document.getElementById('panelAssessment').classList.toggle('show', tab === 'assessment');
     document.getElementById('panelScores').classList.toggle('show', tab === 'scores');
     if (tab === 'assessment') loadAssessInfo();
+    if (tab === 'scores' && topicsState !== 'loading') fetchTopics();
 }
 
 // Load current assessment details from exam script
