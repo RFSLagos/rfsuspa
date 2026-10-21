@@ -1398,6 +1398,33 @@ input:focus, select:focus { outline: none; }
     .adm-att-dates .input { width: 100%; }
     .adm-att-head { flex-wrap: wrap; }
 }
+
+/* CLASS MEETINGS (dashboard) */
+.cm-list { display: flex; flex-direction: column; gap: 8px; }
+.cm-row {
+    display: flex; flex-direction: column; gap: 8px; padding: 12px;
+    border-radius: var(--r-sm); background: var(--line-soft); min-width: 0;
+}
+.cm-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.cm-main { min-width: 0; }
+.cm-when { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.cm-topic { font-size: 13.5px; font-weight: 600; color: var(--ink); margin-top: 2px; overflow-wrap: anywhere; }
+.cm-topic span { font-weight: 500; color: var(--ink-3); }
+.cm-title { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; overflow-wrap: anywhere; }
+.cm-link {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green-deep);
+    text-decoration: none; overflow-wrap: anywhere;
+}
+.cm-link:hover { text-decoration: underline; }
+.cm-note { font-size: 12px; color: var(--ink-3); }
+.cm-problem .cm-note { color: var(--rose-text); }
+.cm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.cm-error .btn { margin-top: 10px; }
+.cm-foot { font-size: 11.5px; color: var(--ink-3); margin-top: 10px; }
+.cm-foot:empty { display: none; }
+@media (max-width: 480px) {
+    .cm-actions .btn { flex: 1; justify-content: center; }
+}
 </style>
 </head>
 <body>
@@ -1596,6 +1623,23 @@ input:focus, select:focus { outline: none; }
                     </div>
                     <div class="card-body" id="dashSessionBody" style="font-size:13px; color:var(--ink-3);">
                         Looking up the active stream from configuration…
+                    </div>
+                </div>
+
+                <!-- Class Meetings: Meet links from the schedule spreadsheet (get_class_meetings) -->
+                <div class="card" id="classMeetingsCard" style="margin-bottom:14px;">
+                    <div class="card-head">
+                        <div class="card-head-text">
+                            <div class="card-title">Class Meetings</div>
+                            <div class="card-sub" id="cmSub">Meet links for the next 2 weeks</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" id="btnCmRefresh" onclick="loadClassMeetings()" title="Refresh class meetings" aria-label="Refresh class meetings">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15"/></svg>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="cm-list" id="cmList"><div class="att-empty">Loading…</div></div>
+                        <div class="cm-foot" id="cmFoot"></div>
                     </div>
                 </div>
 
@@ -2548,6 +2592,7 @@ function showApp() {
     autoLoadSession();
     checkExamStatus();
     startLogPolling();
+    loadClassMeetings();
 }
 
 function handleLogout() {
@@ -2555,6 +2600,9 @@ function handleLogout() {
     clearAdmin();
     sessionData = null;
     testModeOn  = false;
+    cm.seq++; cm.data = null;   // drop any Class Meetings reply still in flight
+    document.getElementById('cmList').innerHTML = '<div class="att-empty">Loading…</div>';
+    document.getElementById('cmFoot').textContent = '';
     document.getElementById('app').classList.remove('show');
     document.getElementById('loginOverlay').style.display = 'grid';
     document.getElementById('loginName').value = '';
@@ -2579,7 +2627,7 @@ function switchPage(name, btn) {
     });
 
     // Lazy-load page data
-    if (name === 'dashboard')   loadDashboard();
+    if (name === 'dashboard')   { loadDashboard(); loadClassMeetings(); }
     if (name === 'attendance') { switchAttTab('student'); loadAttendance(); }
     if (name === 'saturday')    { if (sessionData) updateSaturdayUI(sessionData); }
     if (name === 'scores')      fetchTopics();
@@ -3989,6 +4037,91 @@ function copyAdminAttendance() {
     if (!text) { showToast('Nothing to copy yet.', 'warn'); return; }
     const done = function() { showToast('Copied ' + text.split('\n').length + ' lines — paste into the report.', 'ok'); };
     const fail = function() { showToast('Could not copy — select the names and copy them manually.', 'err'); };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function() { copyTextFallback(text) ? done() : fail(); });
+    } else if (copyTextFallback(text)) done();
+    else fail();
+}
+
+// ── Class Meetings — the Meet link for each coming class ─────
+// From get_class_meetings (admin script), which reads the schedule spreadsheet the
+// scheduler writes its links to. Loaded after login and whenever the Dashboard opens
+// — no polling. The server builds the copy-ready message; dates are Lagos time.
+let cm = { data: null, seq: 0 };
+
+async function loadClassMeetings() {
+    if (!admin) return;
+    const seq = ++cm.seq;
+    document.getElementById('cmList').innerHTML = '<div class="att-empty">Loading…</div>';
+    document.getElementById('cmFoot').textContent = '';
+    let data;
+    try {
+        const url = SCRIPT_URL + '?action=get_class_meetings'
+            + '&token='     + encodeURIComponent(SCRIPT_TOKEN)
+            + '&adminName=' + encodeURIComponent(admin.name)
+            + '&password='  + encodeURIComponent(getStoredPass())
+            + '&cb='        + Date.now();
+        const res = await fetch(url);
+        data = await res.json();
+    } catch (e) {
+        data = { status: 'error', message: 'Connection error. Please try again.' };
+    }
+    if (seq !== cm.seq) return;   // a newer request has replaced this one
+    // Drawn outside the try, so a page bug can't pose as a connection error
+    if (data.status !== 'success') {
+        cm.data = null;
+        document.getElementById('cmList').innerHTML = '<div class="att-empty cm-error">'
+            + safeHtml(data.message || 'Could not load class meetings.')
+            + '<div><button class="btn btn-outline btn-sm" onclick="loadClassMeetings()">Try again</button></div></div>';
+        return;
+    }
+    cm.data = data;
+    renderClassMeetings(data);
+}
+
+function renderClassMeetings(d) {
+    const rows = d.meetings || [];
+    const lead = Number(d.leadDays) || 0;
+    document.getElementById('cmSub').textContent = 'Next 2 weeks · each link is created '
+        + lead + ' day' + (lead === 1 ? '' : 's') + ' before the class';
+    document.getElementById('cmList').innerHTML = rows.length
+        ? rows.map(classMeetingRow).join('')
+        : '<div class="att-empty">No classes in the next 2 weeks.</div>';
+    document.getElementById('cmFoot').textContent = (d.warnings || []).join(' ');
+}
+
+const CM_BADGE = { READY: ['physical', 'Ready'], WAITING: ['test', 'Waiting'], PROBLEM: ['absent', 'Problem'] };
+
+// One class; i = its index in cm.data.meetings (used by the copy buttons)
+function classMeetingRow(m, i) {
+    const badge = CM_BADGE[m.state] || ['', m.state || ''];
+    const times = m.start && m.end ? m.start + ' – ' + m.end + ' WAT' : (m.start || m.end || '');
+    const when = [m.dateLabel, times].filter(Boolean).join(' · ');
+    const isLink = /^https:\/\/meet\.google\.com\//i.test(m.meetLink || '');
+    const icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    return '<div class="cm-row cm-' + String(m.state || '').toLowerCase() + '" data-row="' + safeHtml(m.row) + '">'
+        + '<div class="cm-top"><div class="cm-main">'
+        +   '<div class="cm-when">' + safeHtml(when || 'Date not set') + '</div>'
+        +   '<div class="cm-topic">' + safeHtml(m.topic || '(no topic)') + (m.faculty ? ' <span>· ' + safeHtml(m.faculty) + '</span>' : '') + '</div>'
+        +   (m.title && m.title !== m.topic ? '<div class="cm-title">' + safeHtml(m.title) + '</div>' : '')
+        + '</div><span class="att-status ' + badge[0] + '">' + safeHtml(badge[1]) + '</span></div>'
+        + (isLink ? '<a class="cm-link" href="' + safeHtml(m.meetLink) + '" target="_blank" rel="noopener">' + safeHtml(m.meetLink.replace(/^https:\/\//i, '')) + '</a>' : '')
+        + (m.stateText ? '<div class="cm-note">' + safeHtml(m.stateText) + '</div>' : '')
+        + (m.state === 'READY' && isLink
+            ? '<div class="cm-actions">'
+                + '<button class="btn btn-outline btn-sm" onclick="copyClassMeeting(' + i + ', \'message\')">' + icon + 'Copy message</button>'
+                + '<button class="btn btn-outline btn-sm" onclick="copyClassMeeting(' + i + ', \'link\')">' + icon + 'Copy link</button>'
+            + '</div>'
+            : '')
+        + '</div>';
+}
+
+function copyClassMeeting(i, what) {
+    const m = cm.data && (cm.data.meetings || [])[i];
+    const text = m ? (what === 'link' ? m.meetLink : m.message) : '';
+    if (!text) { showToast('Nothing to copy yet.', 'warn'); return; }
+    const done = function() { showToast(what === 'link' ? 'Meet link copied.' : 'Message copied — paste it where you need it.', 'ok'); };
+    const fail = function() { showToast('Could not copy — open the link and copy it from there.', 'err'); };
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(done, function() { copyTextFallback(text) ? done() : fail(); });
     } else if (copyTextFallback(text)) done();
