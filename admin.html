@@ -700,6 +700,7 @@ input:focus, select:focus { outline: none; }
 .rpt-badge.PENDING { background: var(--amber-soft); color: var(--amber-text); }
 .rpt-badge.NOT-ELIGIBLE,
 .rpt-badge.FAIL { background: var(--rose-soft); color: var(--rose-text); }
+.rpt-noproject { margin-top: 3px; font-size: 10px; font-weight: 600; color: var(--rose-text); white-space: nowrap; }
 
 /* RIGHT RAIL — Live Activity Log */
 .rail {
@@ -3664,7 +3665,9 @@ function renderReport(data) {
 
     const comps = reportComponents(data.plan);
     const rows = results.map(function(r) {
-        const eligBadge = '<span class="rpt-badge ' + r.eligibility.replace(/\s/g,'-') + '">' + escHtml(r.eligibility) + '</span>';
+        // USpA: no Project score above 0 → NOT ELIGIBLE (projectDone false); say why under the badge
+        const eligBadge = '<span class="rpt-badge ' + r.eligibility.replace(/\s/g,'-') + '">' + escHtml(r.eligibility) + '</span>'
+            + (r.projectDone === false ? '<div class="rpt-noproject">No project</div>' : '');
         const statBadge = '<span class="rpt-badge ' + r.finalStatus + '">' + escHtml(r.finalStatus) + '</span>';
         return '<tr>'
             + '<td style="font-family:JetBrains Mono, monospace;font-size:11px;">' + escHtml(r.reg) + '</td>'
@@ -3714,13 +3717,14 @@ function downloadReport() {
                      ['Final Exam Written', 'examWritten'], ['Final Exam MCQ', 'examMCQ']]
                 .map(function(x) { return { label: x[0], get: function(r) { return r[x[1]]; } }; }));
     }
-    const headers = ['Reg Number', 'Last Name', 'First Name', 'Other Name', 'Attended', 'Excused', 'Expected', 'Att%', 'Eligibility']
+    const headers = ['Reg Number', 'Last Name', 'First Name', 'Other Name', 'Attended', 'Excused', 'Expected', 'Att%', 'Eligibility', 'Project Done']
         .concat(itemCols.map(function(c) { return c.label; }))
         .concat(comps.map(function(c) { return c.label; }))
         .concat([(plan && plan.totalWeight) ? 'Grand Total /' + plan.totalWeight : 'Grand Total', 'Final Status']);
     const expected = plan ? plan.expectedAttendance : '';
     const rows = reportData.map(function(r) {
-        return [r.reg, r.lastName, r.firstName, r.otherName || '', r.attPts, r.excused, expected, r.attPct, r.eligibility]
+        const projectDone = r.projectDone === true ? 'Yes' : r.projectDone === false ? 'No' : '';
+        return [r.reg, r.lastName, r.firstName, r.otherName || '', r.attPts, r.excused, expected, r.attPct, r.eligibility, projectDone]
             .concat(itemCols.map(function(c) { return c.get(r); }))
             .concat(comps.map(function(c) { return c.get(r); }))
             .concat([r.grandTotal, r.finalStatus])
