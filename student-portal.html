@@ -303,14 +303,25 @@
         .trow .tt small { display: block; font-size: 12.5px; font-weight: 700; color: var(--red); margin-top: 1px; }
 
         /* ── Join Exam Group (ELIGIBLE / ELIGIBLE-W only, Home tab) — floats just above the bottom nav ── */
-        /* Round black button, WhatsApp logo only, at the right edge of the 480 px content column */
+        /* Black pill "Join the Exam Group" (banner font) tucked under a round black WhatsApp button, at the right edge of the 480 px content column */
         .wa-fab {
             position: fixed; z-index: 110; right: max(16px, calc(50% - 224px));
             bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
-            width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
-            background: var(--black); text-decoration: none;
-            box-shadow: 0 10px 28px rgba(20, 22, 19, 0.28); -webkit-tap-highlight-color: transparent;
+            height: 60px; display: flex; align-items: center; text-decoration: none; border-radius: 999px;
+            -webkit-tap-highlight-color: transparent;
             animation: wa-rise .35s cubic-bezier(.22, .68, 0, 1.2) both; transition: transform .08s;
+        }
+        .wa-fab[hidden] { display: none; }
+        .wa-fab .wa-label {
+            display: flex; align-items: center; height: 46px; padding: 0 36px 0 20px; margin-right: -26px;
+            border-radius: 999px; background: var(--black); color: #fff; white-space: nowrap;
+            font-family: var(--sans); font-size: 15px; font-weight: 600; line-height: 1.3;   /* = .banner .btext */
+            box-shadow: 0 8px 22px rgba(20, 22, 19, 0.22);
+        }
+        .wa-fab .wa-circle {
+            position: relative; z-index: 1; width: 60px; height: 60px; border-radius: 50%; flex-shrink: 0;
+            display: grid; place-items: center; background: var(--black);
+            box-shadow: 0 10px 28px rgba(20, 22, 19, 0.28);
         }
         .wa-fab img { width: 34px; height: 34px; display: block; }
         .wa-fab:active { transform: scale(0.94); }
@@ -472,7 +483,7 @@
         </div>
     </main>
 
-    <a class="wa-fab" id="examGroupBtn" href="#" target="_blank" rel="noopener" aria-label="Join Exam Group" title="Join Exam Group" hidden><img id="examGroupIcon" alt=""></a>
+    <a class="wa-fab" id="examGroupBtn" href="#" target="_blank" rel="noopener" aria-label="Join the Exam Group" title="Join the Exam Group" hidden><span class="wa-label">Join the Exam Group</span><span class="wa-circle"><img id="examGroupIcon" alt=""></span></a>
 
     <nav class="mob-nav" id="mobNav" aria-label="Sections">
         <div class="mob-nav-in">
