@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RFS USpA Student Portal</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Catamaran:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Black, mixed with the HOTR logo's yellow and green. Red only where something is wrong. */
+        :root {
+            --bg: #F1F1EE;
+            --card: #FFFFFF;
+            --black: #141613;
+            --ink: #141613;
+            --ink-2: #4B4F49;
+            --muted: #8C9089;
+            --line: #E8E9E5;
+            --green: #7AC042;
+            --green-soft: #E6F3DA;
+            --green-deep: #26361B;
+            --yellow: #F6EB19;
+            --yellow-soft: #FCF7C2;
+            --red: #D93A2B;
+            --red-soft: #FBE4E1;
+            --stripes: repeating-linear-gradient(135deg, #E3E4DF 0 4px, transparent 4px 9px);
+            --shadow: 0 8px 24px rgba(20, 22, 19, 0.06);
+            --radius: 22px;
+            --serif: 'Amiri', Georgia, serif;
+            --sans: 'Catamaran', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            --nav-h: 70px;
+            /* login button (Assessment Portal style) */
+            --accent: #2D6A2D;
+            --accent-soft: rgba(45, 106, 45, 0.10);
+        }
+
+        /* ── Stable page (admin.html pattern): the body never scrolls or bounces; only .main
+              (or the login overlay, when the keyboard makes it taller than the screen) scrolls ── */
+        html, body { height: 100%; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+        body {
+            position: fixed; inset: 0; width: 100%; overflow: hidden; touch-action: pan-x pan-y;
+            font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+        }
+        [hidden] { display: none !important; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+        .fi { width: 20px; height: 20px; flex-shrink: 0; }
+
+        /* ══ LOGIN — Assessment Portal style (assessment.html), Catamaran ══ */
+        .login-overlay {
+            position: fixed; inset: 0; z-index: 200; background: #1a2a1a;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 24px 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        }
+        .login-overlay::before {
+            content: ''; position: fixed; inset: 0; z-index: 0;
+            background-image: url('hotr-bg.jpg'); background-size: cover; background-position: center 30%;
+            filter: blur(3px) brightness(0.32) saturate(0.6); transform: scale(1.05);
+        }
+        .login-overlay::after {
+            content: ''; position: fixed; inset: 0; z-index: 0;
+            background: radial-gradient(ellipse at center, transparent 20%, rgba(5, 15, 5, 0.65) 100%);
+        }
+        .ap-card {
+            position: relative; z-index: 1; margin: auto 0;
+            background: #fff; border-radius: 22px; width: 100%; max-width: 460px; overflow: hidden; flex-shrink: 0;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.45), 0 2px 12px rgba(0, 0, 0, 0.25);
+            animation: ap-rise 0.4s cubic-bezier(.22, .68, 0, 1.2) both;
+        }
+        @keyframes ap-rise { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
+        .ap-header { padding: 24px 28px 18px; border-bottom: 1px solid rgba(0, 0, 0, 0.09); }
+        .ap-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .ap-logo { display: flex; flex-shrink: 0; }
+        .ap-logo svg { width: 56px; height: 26px; }
+        .ap-brand-text { display: flex; flex-direction: column; gap: 2px; }
+        .ap-brand-name   { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #26361b; }
+        .ap-brand-school { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #7ac042; }
+        .ap-divider { width: 1px; height: 30px; background: rgba(0, 0, 0, 0.12); flex-shrink: 0; }
+        .ap-title { font-size: 22px; font-weight: 800; color: var(--ink); line-height: 1.2; }
+        .ap-meta  { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .ap-tag   { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: #F3F5F0; color: var(--ink-2); }
+        .ap-tag.gold { background: rgba(200, 150, 12, 0.12); color: #9A7209; }
+        .ap-body { padding: 24px 28px 28px; }
+        .ap-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .ap-field label { font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.05em; }
+        .ap-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+        .ap-err { font-size: 12px; color: var(--red); font-weight: 600; }
+        .ap-input {
+            width: 100%; height: 48px; padding: 0 14px;
+            background: #F3F5F0; border: 1.5px solid rgba(0, 0, 0, 0.09); border-radius: 8px; outline: none;
+            font-family: var(--sans); font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: 0.05em; text-transform: uppercase;
+            transition: border-color 0.15s, box-shadow 0.15s; -webkit-appearance: none;
+        }
+        .ap-input::placeholder { color: var(--muted); font-size: 15px; letter-spacing: 0; text-transform: none; }
+        .ap-input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+        .ap-input.invalid { border-color: var(--red); box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1); }
+        .ap-input.pw { text-transform: none; letter-spacing: 0.02em; padding-right: 52px; }
+        .ap-input.pw::-ms-reveal { display: none; }
+        .pw-wrap { position: relative; }
+        .pw-eye {
+            position: absolute; top: 2px; right: 2px; width: 44px; height: 44px; border-radius: 8px;
+            display: grid; place-items: center; color: var(--muted); -webkit-tap-highlight-color: transparent;
+        }
+        .pw-eye .fi { width: 20px; height: 20px; }
+        .pw-eye:hover, .pw-eye[aria-pressed="true"] { color: var(--ink); }
+        .pw-eye:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .ap-btn {
+            width: 100%; height: 50px; border-radius: 8px; background: var(--accent); color: #fff;
+            font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .ap-btn .fi { width: 18px; height: 18px; }
+        .ap-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .ap-btn:enabled:hover { opacity: 0.9; }
+        .ap-btn:enabled:active { transform: scale(0.98); }
+        .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .ap-status { margin-top: 14px; padding: 13px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; text-align: center; line-height: 1.5; background: #FEF0F0; color: var(--red); }
+
+
+        /* ══ APP SHELL — header · scrolling main · bottom nav ══ */
+        .app { position: fixed; inset: 0; display: flex; flex-direction: column; height: 100%; height: 100dvh; background: var(--bg); }
+        .apphead { flex-shrink: 0; }
+        .apphead-in { max-width: 480px; margin: 0 auto; padding: 14px 16px 6px; display: flex; align-items: center; gap: 10px; }
+        .round {
+            width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+            background: var(--card); color: var(--ink); box-shadow: var(--shadow); transition: transform .08s;
+        }
+        .round .fi { width: 19px; height: 19px; }
+        .round:active { transform: scale(0.94); }
+        .round.busy .fi { animation: spin .9s linear infinite; }
+        .round.logo svg { width: 28px; height: 14px; }
+        .head-spacer { flex: 1; }
+        .avatar { background: var(--black); color: var(--green); font-weight: 800; font-size: 15px; letter-spacing: .5px; box-shadow: none; }
+
+        .main { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+        .content { max-width: 480px; margin: 0 auto; padding: 8px 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom)); }
+
+        /* Bottom nav — active = the chart bar's faint green square with a dark green icon (≈ 11:1) */
+        .mob-nav {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 120;
+            background: var(--card); border-radius: 26px 26px 0 0; box-shadow: 0 -8px 28px rgba(20, 22, 19, 0.08);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .mob-nav-in { max-width: 480px; height: var(--nav-h); margin: 0 auto; display: flex; align-items: stretch; padding: 0 8px; }
+        .mob-nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            color: var(--muted); font-size: 12px; font-weight: 700; -webkit-tap-highlight-color: transparent;
+        }
+        .mob-nav-item .nbox { width: 48px; height: 34px; border-radius: 12px; display: grid; place-items: center; color: #A3A79F; transition: background .15s, color .15s; }
+        .mob-nav-item .fi { width: 20px; height: 20px; }
+        .mob-nav-item.active { color: var(--green-deep); font-weight: 800; }
+        .mob-nav-item.active .nbox { background: var(--green-soft); color: var(--green-deep); }
+        .mob-nav-item:active .nbox { transform: scale(0.95); }
+
+        /* ── Building blocks ───────────────────────────────── */
+        .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+        .sec-head { display: flex; align-items: center; justify-content: space-between; margin: 26px 4px 12px; }
+        .sec-head h3 { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; }
+        .see-all { display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 600; color: var(--muted); }
+        .see-all .fi { width: 16px; height: 16px; }
+        .tile { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: #F1F1EE; color: var(--ink); }
+        .tile .fi { width: 19px; height: 19px; }
+
+        .banner {
+            display: flex; align-items: center; gap: 12px; background: var(--black); color: #fff;
+            border-radius: 999px; padding: 8px 8px 8px 8px; min-height: 60px;
+        }
+        .banner .btile { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; }
+        .banner .btile .fi { width: 22px; height: 22px; }
+        .banner .btile.ok { background: var(--green); color: var(--black); }
+        .banner .btile.warn { background: var(--yellow); color: var(--black); }
+        .banner .btile.bad { background: var(--red); color: #fff; }
+        .banner .btext { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
+        .banner .bchip { flex-shrink: 0; margin-right: 6px; }
+
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 800; letter-spacing: .5px; white-space: nowrap; color: var(--black); }
+        .badge.ELIGIBLE { background: var(--green); }
+        .badge.ELIGIBLE-W { background: var(--yellow); }
+        .badge.MAKE-UP { background: var(--yellow); box-shadow: inset 0 0 0 1.5px var(--black); }
+        .badge.NOT-ELIGIBLE { background: var(--red); color: #fff; }
+
+        .chip { display: inline-block; font-size: 12px; font-weight: 800; padding: 4px 11px; border-radius: 999px; white-space: nowrap; }
+        .chip.green { background: var(--green); color: var(--black); }
+        .chip.yellow { background: var(--yellow); color: var(--black); }
+        .chip.red { background: var(--red-soft); color: var(--red); }
+        .chip.grey { background: #EEEFEB; color: var(--ink-2); }
+        .chip.black { background: var(--black); color: #fff; }
+
+        .progress { height: 10px; border-radius: 999px; background: #EEEFEB; overflow: hidden; }
+        .progress i { display: block; height: 100%; border-radius: 999px; background: var(--green); }
+
+        /* ── Home ──────────────────────────────────────────── */
+        .headline { font-size: 34px; font-weight: 400; line-height: 1.08; letter-spacing: -0.02em; margin: 14px 4px 18px; overflow-wrap: anywhere; color: var(--ink); }
+        .headline span { display: block; color: var(--muted); }
+
+        .chart-card { padding: 16px 16px 14px; margin-top: 16px; }
+        .chart-head { display: flex; align-items: center; gap: 12px; }
+        .chart-head > div:last-child { flex: 1; min-width: 0; }
+        .chart-head h3 { font-size: 18px; font-weight: 400; line-height: 1.2; }
+        .chart-head small { display: block; font-size: 13px; color: var(--muted); font-weight: 700; }
+        .chart { position: relative; margin-top: 18px; }
+        .bars { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; padding: 34px 2px 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+        .bars::-webkit-scrollbar { display: none; }
+        .bcol { flex: 0 0 34px; display: flex; flex-direction: column; align-items: center; }
+        .btrack { position: relative; width: 34px; height: 150px; display: flex; align-items: flex-end; }
+        .bar { position: relative; width: 100%; border-radius: 17px; background: var(--green-soft); min-height: 10px; }
+        .bar.now { background: var(--black); }
+        .bar.future { background: var(--stripes); height: 100%; }
+        .bar .pts { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); font-size: 10.5px; font-weight: 800; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
+        .bar .pts.up { background: var(--green); color: var(--black); }
+        .bar .pts.zero { background: var(--red-soft); color: var(--red); }
+        .bar.now .pts { top: 8px; background: var(--yellow); color: var(--black); }
+        .tip { position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); background: var(--black); color: #fff; font-size: 12.5px; font-weight: 800; padding: 4px 9px; border-radius: 10px; white-space: nowrap; }
+        .tip::after { content: ''; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); width: 9px; height: 9px; border-radius: 50%; background: var(--yellow); border: 2px solid #fff; }
+        .bday { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 8px; }
+        .bday.now { color: var(--black); font-weight: 800; }
+        .thresh { position: absolute; left: 0; right: 0; border-top: 1.5px dashed #B9BCB4; pointer-events: none; }
+        .thresh span { position: absolute; right: 0; top: -19px; font-size: 11px; font-weight: 800; color: var(--ink-2); background: var(--card); padding: 0 4px; }
+
+        .mini { display: flex; margin-top: 14px; padding: 14px 6px; }
+        .mini > div { flex: 1; text-align: center; }
+        .mini > div + div { border-left: 1px solid var(--line); }
+        .mini b { display: block; font-family: var(--sans); font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+        .mini span { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+
+        .task { padding: 16px 18px 18px; }
+        .task-top { display: flex; align-items: flex-start; gap: 10px; }
+        .task-top h4 { flex: 1; font-size: 19px; font-weight: 400; line-height: 1.2; }
+        .task p { color: var(--muted); font-size: 14.5px; margin-top: 6px; line-height: 1.4; }
+        .task .prow { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 6px; font-size: 13px; color: var(--ink-2); font-weight: 700; }
+        .task .prow span:last-child { color: var(--muted); }
+
+        .note { text-align: center; color: var(--muted); font-size: 13px; margin-top: 20px; }
+        .note.warn { color: #8A5A00; }
+
+        /* ── Attendance (calendar) ─────────────────────────── */
+        .page-title { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 14px 4px 14px; }
+        .page-title h2 { font-size: 30px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; }
+        .page-title small { display: block; font-size: 13px; color: var(--muted); font-weight: 700; margin-top: 2px; letter-spacing: 0; }
+        .month-pill { display: flex; align-items: center; gap: 2px; background: var(--card); border-radius: 999px; box-shadow: var(--shadow); padding: 4px; flex-shrink: 0; margin-left: auto; }
+        .month-pill button { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); }
+        .month-pill button:disabled { color: #C9CBC5; cursor: default; }
+        .month-pill button .fi { width: 18px; height: 18px; }
+        .month-pill span { font-size: 14.5px; font-weight: 800; padding: 0 4px; white-space: nowrap; }
+
+        .cal { padding: 16px 12px 14px; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 8px; justify-items: center; }
+        .cal-dow { font-size: 13px; font-weight: 800; color: var(--muted); padding-bottom: 4px; }
+        .day {
+            position: relative; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+            font-size: 15px; font-weight: 700; color: #A3A79F; background: #F6F6F3;
+        }
+        .day.out { background: var(--stripes); }
+        .day.class { cursor: pointer; color: var(--ink); background: var(--card); box-shadow: inset 0 0 0 1.5px #D5D7D1; }
+        .day.att { background: var(--green); color: var(--black); box-shadow: none; }
+        .day.half { background: var(--yellow); color: var(--black); box-shadow: none; }
+        .day.miss { background: var(--red-soft); color: var(--red); box-shadow: none; }
+        .day.soon { background: var(--card); color: var(--ink); box-shadow: none; outline: 1.5px dashed #B9BCB4; outline-offset: -1.5px; }
+        .day.today { background: var(--black); color: #fff; box-shadow: none; outline: none; }
+        .day.today .dot { position: absolute; bottom: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--yellow); }
+        .day.today .dot.done { background: var(--green); }
+        .day.sel { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--black); }
+        .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; margin-top: 14px; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+        .legend span { display: inline-flex; align-items: center; gap: 6px; }
+        .legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+
+        .detail { padding: 16px 18px 18px; margin-top: 14px; }
+        .detail .meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13.5px; font-weight: 700; color: var(--ink-2); }
+        .detail .meta b { color: var(--ink); }
+
+        .mlist { margin-top: 14px; padding: 6px; }
+        .mrow { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 10px; border-radius: 16px; }
+        .mrow + .mrow { margin-top: 2px; }
+        .mrow.sel { background: #F3F3F0; }
+        .mdate { width: 44px; flex-shrink: 0; text-align: center; border-radius: 12px; background: #F1F1EE; padding: 5px 0 4px; }
+        .mdate b { display: block; font-size: 17px; line-height: 1; font-weight: 800; }
+        .mdate small { display: block; font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+        .mrow .mt { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+        .sdot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .s-att { background: var(--green); } .s-half { background: var(--yellow); } .s-miss { background: var(--red); }
+        .s-soon { background: transparent; box-shadow: inset 0 0 0 1.5px #B9BCB4; } .s-today { background: var(--black); }
+        .msum { text-align: center; color: var(--muted); font-size: 13px; font-weight: 700; margin-top: 12px; }
+        .empty { padding: 18px 16px; color: var(--muted); font-size: 15px; text-align: center; }
+
+        /* ── Join Exam Group (ELIGIBLE / ELIGIBLE-W only, Home tab) — floats just above the bottom nav ── */
+        /* Round black button, WhatsApp logo only, at the right edge of the 480 px content column */
+        .wa-fab {
+            position: fixed; z-index: 110; right: max(16px, calc(50% - 224px));
+            bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
+            width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
+            background: var(--black); text-decoration: none;
+            box-shadow: 0 10px 28px rgba(20, 22, 19, 0.28); -webkit-tap-highlight-color: transparent;
+            animation: wa-rise .35s cubic-bezier(.22, .68, 0, 1.2) both; transition: transform .08s;
+        }
+        .wa-fab img { width: 34px; height: 34px; display: block; }
+        .wa-fab:active { transform: scale(0.94); }
+        .wa-fab:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+        @keyframes wa-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+        .content.has-fab { padding-bottom: calc(var(--nav-h) + 98px + env(safe-area-inset-bottom)); }
+    </style>
+</head>
+<body>
+
+<!-- ══ LOGIN — Assessment Portal style (reg number only) ══ -->
+<div class="login-overlay" id="login" hidden>
+    <div class="ap-card">
+        <div class="ap-header">
+            <div class="ap-brand">
+                <span class="ap-logo" data-logo></span>
+                <div class="ap-divider"></div>
+                <div class="ap-brand-text">
+                    <span class="ap-brand-name">House on the Rock Lagos</span>
+                    <span class="ap-brand-school">Rock Foundation School</span>
+                </div>
+            </div>
+            <h1 class="ap-title">Student Portal</h1>
+            <div class="ap-meta">
+                <span class="ap-tag">Understanding Spiritual Authority</span>
+                <span class="ap-tag gold" id="streamTag" hidden></span>
+            </div>
+        </div>
+        <form class="ap-body" id="loginForm" novalidate>
+            <div class="ap-field">
+                <label for="regInput">Registration Number</label>
+                <input class="ap-input" id="regInput" name="reg" type="text" inputmode="text" autocomplete="off"
+                       autocapitalize="characters" spellcheck="false" placeholder="RFS / XXXX / XXX" maxlength="14">
+                <span class="ap-hint">Format: RFS/2601/053</span>
+                <span class="ap-err" id="regErr" hidden></span>
+            </div>
+            <div class="ap-field">
+                <label for="pwInput">Password</label>
+                <div class="pw-wrap">
+                    <input class="ap-input pw" id="pwInput" name="password" type="password" autocomplete="off"
+                           autocapitalize="off" spellcheck="false" placeholder="Your surname" maxlength="60">
+                    <button class="pw-eye" id="pwEye" type="button" aria-controls="pwInput" aria-pressed="false" aria-label="Show password" title="Show password"></button>
+                </div>
+                <span class="ap-hint">Your surname — not case-sensitive</span>
+                <span class="ap-err" id="pwErr" hidden></span>
+            </div>
+            <button class="ap-btn" id="signInBtn" type="submit"></button>
+            <div class="ap-status" id="loginError" role="alert" hidden></div>
+        </form>
+    </div>
+</div>
+
+
+<!-- ══ APP: header · Home / Attendance · bottom nav ══ -->
+<div class="app" id="dash" hidden>
+    <header class="apphead">
+        <div class="apphead-in">
+            <div class="round logo" data-logo aria-hidden="true"></div>
+            <div class="head-spacer"></div>
+            <button class="round" id="refreshBtn" type="button" title="Refresh" aria-label="Refresh"><span data-icon="refresh-cw"></span></button>
+            <button class="round" id="logoutBtn" type="button" title="Log out" aria-label="Log out"><span data-icon="log-out"></span></button>
+            <div class="round avatar" id="avatar" title="" aria-hidden="true"></div>
+        </div>
+    </header>
+
+    <main class="main" id="main">
+        <div class="content">
+
+            <!-- ── Home ── -->
+            <div class="panel" id="tab-home">
+                <h1 class="headline" id="headline"><span id="greet"></span></h1>
+                <p hidden><span id="fullName"></span> <span id="regLabel"></span></p>
+
+                <div class="banner" id="banner">
+                    <div class="btile" id="bannerIcon"></div>
+                    <div class="btext" id="standingText"></div>
+                    <span class="badge bchip" id="eligBadge"></span>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="chart-head">
+                        <div class="tile" data-icon="trending-up"></div>
+                        <div><h3>Attendance Progress</h3><small id="chartNote"></small></div>
+                    </div>
+                    <div class="chart">
+                        <div class="bars" id="bars"></div>
+                        <div class="thresh" id="thresh"><span id="threshLabel"></span></div>
+                    </div>
+                </div>
+
+                <div class="card mini">
+                    <div><b id="statPts">0</b><span>Points</span></div>
+                    <div><b id="statPct">0%</b><span>Attendance</span></div>
+                </div>
+
+                <div id="nextSec">
+                    <div class="sec-head"><h3>Next Class</h3><button class="see-all" type="button" data-goto="attendance">See all<span data-icon="chevron-right"></span></button></div>
+                    <div class="card task">
+                        <div class="task-top"><h4 id="nextTopic"></h4><span class="chip yellow" id="nextWhen"></span></div>
+                        <p id="nextDate"></p>
+                        <div class="prow"><span id="heldText"></span><span id="heldPct"></span></div>
+                        <div class="progress"><i id="heldBar"></i></div>
+                    </div>
+                </div>
+
+                <p class="note" id="updatedNote" aria-live="polite"></p>
+            </div>
+
+            <!-- ── Attendance ── -->
+            <div class="panel" id="tab-attendance" hidden>
+                <div class="page-title">
+                    <h2>Attendance<small id="classCount"></small></h2>
+                    <div class="month-pill">
+                        <button type="button" id="monPrev" aria-label="Previous month"><span data-icon="chevron-left"></span></button>
+                        <span id="monLabel"></span>
+                        <button type="button" id="monNext" aria-label="Next month"><span data-icon="chevron-right"></span></button>
+                    </div>
+                </div>
+                <div class="card cal">
+                    <div class="cal-grid" id="calGrid"></div>
+                    <div class="legend">
+                        <span><i class="s-att"></i>Attended</span><span><i class="s-half"></i>Half day</span><span><i class="s-miss"></i>Missed</span>
+                        <span><i class="s-soon"></i>Upcoming</span><span><i class="s-today"></i>Today</span>
+                    </div>
+                </div>
+                <div class="card detail task" id="dayCard">
+                    <div class="task-top"><h4 id="dayTopic"></h4><span class="chip" id="dayChip"></span></div>
+                    <p id="dayDate"></p>
+                    <div class="meta" id="dayMeta"></div>
+                </div>
+                <div class="card mlist" id="monthList"></div>
+                <p class="msum" id="monthSummary"></p>
+            </div>
+
+        </div>
+    </main>
+
+    <a class="wa-fab" id="examGroupBtn" href="#" target="_blank" rel="noopener" aria-label="Join Exam Group" title="Join Exam Group" hidden><img id="examGroupIcon" alt=""></a>
+
+    <nav class="mob-nav" id="mobNav" aria-label="Sections">
+        <div class="mob-nav-in">
+            <button class="mob-nav-item active" type="button" data-tab="home"><span class="nbox" data-icon="home"></span>Home</button>
+            <button class="mob-nav-item" type="button" data-tab="attendance"><span class="nbox" data-icon="calendar"></span>Attendance</button>
+        </div>
+    </nav>
+</div>
+
+<script>
+// USpA student portal — Home + Attendance only (no tests until USpA's assessments are planned).
+// Same deployment as UNIFIED_SCRIPT_URL in USpA admin.html (uspa-unified-script.js). Public action — no token.
+const STUDENT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3Jk26H9JCwmBLRxBfrNvxeUmN9YfynL3Vo3hLR_1VfBMv2tLnYLQZveO9MzG7GmnT-w/exec';
+const SESSION_KEY = 'rfsUspaStudentPortal';
+const REQUEST_TIMEOUT_MS = 20000;
+const TABS = ['home', 'attendance'];
+// WhatsApp exam group — only ELIGIBLE / ELIGIBLE-W students see the "Join Exam Group" button (Home tab).
+// Change this link for each stream's new group. It is in the public page source.
+const EXAM_GROUP_URL = 'https://chat.whatsapp.com/Jyd5xjlkpma34Os41abSFQ?mode=gi_t';
+const EXAM_GROUP_LEVELS = ['ELIGIBLE', 'ELIGIBLE-W'];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ── Icons: Feather (feather/*.svg in the project), inner markup copied so the page stays self-contained ──
+const FEATHER = {
+    'home': '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>',
+    'calendar': '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>',
+    'refresh-cw': '<polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>',
+    'log-out': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>',
+    'log-in': '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line>',
+    'eye': '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>',
+    'eye-off': '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>',
+    'chevron-right': '<polyline points="9 18 15 12 9 6"></polyline>',
+    'chevron-left': '<polyline points="15 18 9 12 15 6"></polyline>',
+    'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>',
+    'alert-circle': '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>',
+    'x-circle': '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>',
+    'trending-up': '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>'
+};
+const fi = (name, sw) => '<svg class="fi fi-' + name + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 2) +
+    '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + FEATHER[name] + '</svg>';
+// House on the Rock logo (same SVG as admin.html / assessment.html)
+const LOGO = '<svg viewBox="0 0 1535.61 720.7" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="House on the Rock">' +
+    '<path fill="#7ac042" d="M0,693.1l17.76-27.95,78.77-14.93,39.53-55.38c77.39-18.85,157.19-33.28,236.48-44.4,298.97-41.95,607.51-36.4,904.31,19.14,48.81,9.13,92.27,16.51,137.14,38.78,15.07,7.48,54.7,29.33,64.06,41.87,6.62,8.87,11.26,24.98,17.82,34.63,6.09,3.05,24.83,2.93,29.31,6.17,1.19.86,10.43,20.26,10.44,21.53-8.4,1.77-17.28-.18-25.46-.53-172.91-7.3-345.62-20.92-518.95-15.98-120.92,3.45-242.02,15.47-362.82,21.05-167.22,7.73-335,2.5-501.9-11.03-42.2-3.42-84.32-8.22-126.47-11.98v-1Z"/>' +
+    '<path fill="#26361b" d="M905.76,112.87v160.78c24.25-7.17,48.56-17.58,74.47-15.96,28.01,1.75,53.53,16.33,75.81,32.13,50,35.45,119.73,106.25,181.15,113.65,13.1,1.58,26.08-1.17,36.47,9.51,5.34,5.49,12.01,21.51,12.01,28.95v22.47l-64.98,1v45.94c-35.89-4.17-71.67-10.41-107.6-14.86-242.16-30.01-485.68-27.78-727.54,4.01-19.03,2.5-37.9,6.26-57.05,7.91-2.5-13.93-2.65-28.83-1.58-43h-41.99v-31.46c0-3.13,1.55-12.2,2.48-15.5,2.27-8.01,6.95-12.37,15.27-13.7,101.98-.92,204.14,1.97,304.17-19.72,86.33-18.72,163.38-55.83,243.75-90.56.54-17.23-.14-34.53.17-51.77.1-5.48-.09-10.99,0-16.48,15.76-35.82,32.94-71.42,50.13-106.71.93-1.91,1.92-4.24,3-5.99.46-.74,1.51-2.57,1.85-.64Z"/>' +
+    '<path fill="#f6eb19" d="M850.78,242.7c-75.13,29.86-146.12,67.66-224.73,88.6-38.12,10.16-77.21,16.63-116.54,20.16l-1.47-1.58c-9.55-57.54-3.35-116.46,19.35-170.07C583.95,46.3,728.79-28.69,870.99,10.3c109.33,29.97,193.87,126.56,210.72,238.39-1.54.38-2.17-.63-3.28-1.2-7.95-4.12-16.61-11.38-25.03-15.94-30.39-16.47-65.95-25.9-100.59-19.82l-47.04-98.85c-.35-1.93-1.4-.09-1.85.64-1.08,1.75-2.07,4.08-3,5.99-17.19,35.29-34.37,70.89-50.13,106.71-.09,5.49.1,11,0,16.48Z"/></svg>';
+// WhatsApp icon (whatsapp.png in the project root, 96 px), embedded so the page stays self-contained
+const WA_ICON = 'data:image/png;base64,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';
+document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = fi(el.dataset.icon); });
+document.querySelectorAll('[data-logo]').forEach(el => { el.innerHTML = LOGO; });
+
+// ── Session (sessionStorage only; every access guarded) ──────
+// The password (the surname) is kept with the reg so Refresh can ask again; a session saved
+// by the older reg-only page has no pw and counts as no session.
+function readSession() {
+    try { const v = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); return v && v.reg && v.pw && v.data ? v : null; }
+    catch (e) { return null; }
+}
+function writeSession(reg, pw, data, tab) {
+    try {
+        const old = readSession();
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ reg: reg, pw: pw, data: data, savedAt: Date.now(), tab: tab || (old && old.reg === reg && old.tab) || 'home' }));
+    } catch (e) {}
+}
+function saveTab(tab) {
+    try { const s = readSession(); if (s) { s.tab = tab; sessionStorage.setItem(SESSION_KEY, JSON.stringify(s)); } } catch (e) {}
+}
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+
+// ── Reg number: "rfs 2601 053", "2601/053", "2601053" → "RFS/2601/053" ──
+function normaliseReg(raw) {
+    const t = String(raw || '').toUpperCase().replace(/\s+/g, '');
+    const m = /^(?:RFS)?\/?(\d{4})\/?(\d{3})$/.exec(t);
+    return m ? 'RFS/' + m[1] + '/' + m[2] : t;
+}
+
+// ── Network ──────────────────────────────────────────────────
+async function fetchStatus(reg, pw) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+    try {
+        const res = await fetch(STUDENT_SCRIPT_URL + '?action=get_student_status&reg=' + encodeURIComponent(reg) +
+            '&password=' + encodeURIComponent(pw || ''), { signal: ctrl.signal });
+        const data = await res.json();
+        if (!data || data.status !== 'success') return { ok: false, password: !!(data && data.code === 'PASSWORD'),
+            message: (data && data.message) || 'Something went wrong. Please try again.' };
+        return { ok: true, data: data };
+    } catch (err) {
+        return { ok: false, network: true, message: err && err.name === 'AbortError'
+            ? 'The server is taking too long. Check your connection and try again.'
+            : 'Could not reach the server. Check your connection and try again.' };
+    } finally { clearTimeout(timer); }
+}
+
+// ── Login (Assessment Portal style) ──────────────────────────
+const SIGN_IN_LABEL = fi('log-in') + 'View My Status';
+function showLogin(message) {
+    $('dash').hidden = true;
+    $('login').hidden = false;
+    DATA = null;
+    updateExamGroupBtn('');
+    $('login').scrollTop = 0;
+    const err = $('loginError');
+    err.textContent = message || '';
+    err.hidden = !message;
+    setRegError('');
+    setPwError('');
+    setPwVisible(false);
+    setBusy(false);
+    loadStreamTag();
+}
+function setPwError(message) {
+    $('pwErr').textContent = message || '';
+    $('pwErr').hidden = !message;
+    $('pwInput').classList.toggle('invalid', !!message);
+}
+$('pwInput').addEventListener('input', () => setPwError(''));
+
+// Eye button: show / hide the typed password. Hidden again on every login screen and after sign-in.
+function setPwVisible(show) {
+    const eye = $('pwEye');
+    $('pwInput').type = show ? 'text' : 'password';
+    eye.innerHTML = fi(show ? 'eye-off' : 'eye');
+    eye.setAttribute('aria-pressed', show ? 'true' : 'false');
+    eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    eye.title = show ? 'Hide password' : 'Show password';
+}
+$('pwEye').addEventListener('mousedown', e => e.preventDefault());     // keep the field focused (and the phone keyboard up)
+$('pwEye').addEventListener('click', () => {
+    setPwVisible($('pwInput').type === 'password');
+    if (document.activeElement !== $('pwInput') && $('pwInput').value) {
+        const end = $('pwInput').value.length;
+        $('pwInput').focus(); $('pwInput').setSelectionRange(end, end);
+    }
+});
+setPwVisible(false);
+function setBusy(busy) {
+    const b = $('signInBtn');
+    b.disabled = busy;
+    b.innerHTML = busy ? '<span class="spinner" aria-hidden="true"></span>Checking…' : SIGN_IN_LABEL;
+}
+function setRegError(message) {
+    $('regErr').textContent = message || '';
+    $('regErr').hidden = !message;
+    $('regInput').classList.toggle('invalid', !!message);
+}
+
+// The active stream tag on the login card ("Stream 3 · 2026"), from the public get_active_stream.
+let streamTagLoaded = false;
+async function loadStreamTag() {
+    if (streamTagLoaded) return;
+    streamTagLoaded = true;
+    try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+        const res = await fetch(STUDENT_SCRIPT_URL + '?action=get_active_stream', { signal: ctrl.signal });
+        clearTimeout(timer);
+        const d = await res.json();
+        if (!d || d.status !== 'success' || !d.stream) { streamTagLoaded = false; return; }
+        const st = /^\d+$/.test(String(d.stream)) ? String(Number(d.stream)) : String(d.stream);
+        $('streamTag').textContent = 'Stream ' + st + (d.year ? ' · ' + d.year : '');
+        $('streamTag').hidden = false;
+    } catch (e) { streamTagLoaded = false; }
+}
+
+// Letters, digits and "/" only, upper-case (as in the Assessment Portal)
+$('regInput').addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/[^A-Za-z0-9/]/g, '').toUpperCase();
+    setRegError('');
+});
+
+$('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const reg = normaliseReg($('regInput').value);
+    $('regInput').value = reg;
+    $('loginError').hidden = true;
+    if (!/^RFS\/\d{4}\/\d{3}$/.test(reg)) { setRegError('Enter your registration number like RFS/2601/053.'); $('regInput').focus(); return; }
+    setRegError('');
+    const pw = $('pwInput').value;
+    if (!pw.replace(/[\s\-‐-—]/g, '')) { setPwError('Enter your password — it is your surname.'); $('pwInput').focus(); return; }
+    setPwError('');
+    setBusy(true);
+    const r = await fetchStatus(reg, pw);
+    setBusy(false);
+    if (!r.ok && r.password) { setPwError(r.message); $('pwInput').focus(); return; }
+    if (!r.ok) { showLogin(r.message); return; }
+    $('regInput').blur(); $('pwInput').blur();
+    $('pwInput').value = '';
+    setPwVisible(false);
+    CAL.month = ''; CAL.sel = '';
+    writeSession(reg, pw, r.data, 'home');
+    renderAll(r.data, Date.now());
+    setTab('home');
+});
+
+$('logoutBtn').addEventListener('click', () => {
+    clearSession();
+    $('regInput').value = '';
+    $('pwInput').value = '';
+    showLogin('');
+});
+
+$('refreshBtn').addEventListener('click', () => refresh(false));
+
+async function refresh(quiet) {
+    const s = readSession();
+    if (!s) { showLogin(''); return; }
+    const btn = $('refreshBtn');
+    btn.disabled = true; btn.classList.add('busy');
+    const r = await fetchStatus(s.reg, s.pw);
+    btn.disabled = false; btn.classList.remove('busy');
+    if (r.ok) { writeSession(s.reg, s.pw, r.data); renderAll(r.data, Date.now()); return; }
+    // Surname no longer matches (e.g. corrected by an admin): sign in again
+    if (r.password) { clearSession(); $('regInput').value = s.reg; $('pwInput').value = ''; showLogin(''); setPwError(r.message); return; }
+    const note = $('updatedNote');
+    note.className = 'note warn';
+    note.textContent = (quiet ? 'Showing saved details. ' : '') + r.message;
+}
+
+// ── Tabs (bottom nav) ────────────────────────────────────────
+function setTab(tab) {
+    if (tab === 'dashboard') tab = 'home';                 // older saved sessions (also 'tests' → home below)
+    if (TABS.indexOf(tab) === -1) tab = 'home';
+    TABS.forEach(t => { $('tab-' + t).hidden = t !== tab; });
+    document.querySelectorAll('.mob-nav-item').forEach(b => {
+        const on = b.dataset.tab === tab;
+        b.classList.toggle('active', on);
+        if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    $('main').scrollTop = 0;
+    saveTab(tab);
+    updateExamGroupBtn(tab);
+    if (tab === 'home') scrollChartToLatest();
+}
+// Floating "Join Exam Group": Home tab only, and only for ELIGIBLE / ELIGIBLE-W.
+function currentTab() { const a = document.querySelector('.mob-nav-item.active'); return a ? a.dataset.tab : 'home'; }
+function updateExamGroupBtn(tab) {
+    const show = !!DATA && tab === 'home' && EXAM_GROUP_LEVELS.indexOf(String(DATA.eligibility || '').trim().toUpperCase()) !== -1;
+    $('examGroupBtn').hidden = !show;
+    document.querySelector('.content').classList.toggle('has-fab', show);
+}
+$('examGroupBtn').href = EXAM_GROUP_URL;
+$('examGroupIcon').src = WA_ICON;
+document.querySelectorAll('.mob-nav-item').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+document.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.goto)));
+
+// ── Dates ────────────────────────────────────────────────────
+const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MON_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function ymdParts(ymd) { const p = ymd.split('-').map(Number); return { y: p[0], m: p[1] - 1, d: p[2], wd: new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay() }; }
+function shortDate(ymd) { const p = ymdParts(ymd); return DAY[p.wd] + ', ' + p.d + ' ' + MON[p.m]; }
+function longDate(ymd) { const p = ymdParts(ymd); return DAY_LONG[p.wd] + ', ' + p.d + ' ' + MON_LONG[p.m] + ' ' + p.y; }
+function daysBetween(a, b) { const A = ymdParts(a), B = ymdParts(b); return Math.round((Date.UTC(B.y, B.m, B.d) - Date.UTC(A.y, A.m, A.d)) / 864e5); }
+const pad2 = n => (n < 10 ? '0' : '') + n;
+const pct = (a, b) => b > 0 ? Math.round(a / b * 100) : 0;
+
+// ── Render ───────────────────────────────────────────────────
+// A class still to come: a future date, or today's class before the student has checked in.
+let TODAY = '';
+let DATA = null;
+const isAhead = c => c.date > TODAY || (c.date === TODAY && !c.attended);
+// Calendar / list status of one class
+function classStatus(c) {
+    if (c.date === TODAY && !c.attended) return 'today';
+    if (c.state === 'ATTENDED') return 'att';
+    if (c.state === 'PARTIAL') return 'half';
+    if (c.state === 'ABSENT') return 'miss';
+    if (c.state === 'TODAY') return 'today';
+    return 'soon';
+}
+
+function renderAll(d, savedAt) {
+    DATA = d;
+    TODAY = d.today || '';
+    $('login').hidden = true;
+    $('dash').hidden = false;
+    const first = d.firstName || '', last = d.lastName || '';
+    $('avatar').textContent = ((first[0] || '') + (last[0] || '')).toUpperCase() || '?';
+    $('avatar').title = (first + ' ' + last).trim() + ' · ' + d.reg;
+    $('fullName').textContent = (first + ' ' + last).trim();
+    $('regLabel').textContent = d.reg;
+    const classes = Array.isArray(d.classes) ? d.classes : [];
+    renderHome(d, classes);
+    renderCalendar(classes);
+    updateExamGroupBtn(currentTab());
+    const note = $('updatedNote');
+    note.className = 'note';
+    const t = new Date(savedAt || Date.now());
+    note.textContent = 'Updated ' + t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · attendance updates as soon as it is recorded.';
+}
+
+// ── Home ─────────────────────────────────────────────────────
+function renderHome(d, classes) {
+    const h = new Date().getHours();
+    $('headline').innerHTML = esc((h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') + ', ' + (d.firstName || 'there')) +
+        '<span id="greet">here\'s your progress.</span>';
+
+    // Banner: what the student needs next
+    const th = d.thresholds || {}, exp = Number(d.expectedAtt) || 0, pts = Number(d.attPts) || 0;
+    const need = p => Math.max(0, Math.ceil((p / 100) * exp - 1e-9) - pts);
+    const more = (n, target) => n + ' more point' + (n === 1 ? '' : 's') + ' to reach ' + target + '.';
+    let msg, icon, kind;
+    if (d.eligibility === 'ELIGIBLE') { msg = 'You\'re eligible — keep it up.'; icon = 'check-circle'; kind = 'ok'; }
+    else if (d.eligibility === 'ELIGIBLE-W') { msg = more(need(th.eligible), 'ELIGIBLE'); icon = 'alert-circle'; kind = 'warn'; }
+    else if (d.eligibility === 'MAKE-UP') { msg = more(need(th.eligibleW), 'ELIGIBLE-W'); icon = 'alert-circle'; kind = 'warn'; }
+    else { msg = more(need(th.makeUp), 'MAKE-UP'); icon = 'x-circle'; kind = 'bad'; }
+    $('standingText').textContent = msg;
+    $('bannerIcon').className = 'btile ' + kind;
+    $('bannerIcon').innerHTML = fi(icon);
+    const badge = $('eligBadge');
+    badge.className = 'badge bchip ' + String(d.eligibility).replace(/\s+/g, '-');
+    badge.textContent = d.eligibility;
+
+    renderChart(d, classes);
+
+    // Mini stats
+    $('statPts').textContent = pts + '/' + exp;
+    $('statPct').textContent = d.attPct + '%';
+
+    // Next class
+    const n = d.nextClass;
+    $('nextSec').hidden = !n;
+    const held = classes.filter(c => !isAhead(c)).length;
+    if (n) {
+        const gap = TODAY ? daysBetween(TODAY, n.date) : null;
+        $('nextWhen').textContent = gap === 0 ? 'Today' : gap === 1 ? 'Tomorrow' : shortDate(n.date);
+        $('nextTopic').textContent = n.topic || 'Class';
+        $('nextDate').textContent = longDate(n.date) + (n.start ? ' · ' + n.start + (n.end ? ' – ' + n.end : '') : '');
+        $('heldText').textContent = 'Classes held: ' + held + ' of ' + classes.length;
+        $('heldPct').textContent = pct(held, classes.length) + '%';
+        $('heldBar').style.width = pct(held, classes.length) + '%';
+    }
+}
+
+// One bar per class: the cumulative attendance % after it. Latest held class = black + tooltip.
+function renderChart(d, classes) {
+    const exp = Number(d.expectedAtt) || 0;
+    const sorted = classes.slice().sort((a, b) => a.date < b.date ? -1 : 1);
+    let cum = 0, lastHeld = -1;
+    sorted.forEach((c, i) => { if (!isAhead(c)) lastHeld = i; });
+    $('chartNote').textContent = d.attPct + '% of ' + exp + ' pts';
+    $('bars').innerHTML = sorted.length ? sorted.map((c, i) => {
+        const day = ymdParts(c.date).d;
+        if (isAhead(c)) return '<div class="bcol" title="' + esc(shortDate(c.date)) + '"><div class="btrack"><div class="bar future"></div></div><div class="bday">' + day + '</div></div>';
+        cum += Number(c.points) || 0;
+        const p = Math.min(100, pct(cum, exp));
+        const now = i === lastHeld;
+        const chip = c.points > 0 ? '<span class="pts up">+' + c.points + '</span>' : '<span class="pts zero">0</span>';
+        return '<div class="bcol" data-date="' + c.date + '" title="' + esc(shortDate(c.date) + ' · ' + p + '%') + '"><div class="btrack">' +
+            '<div class="bar' + (now ? ' now' : '') + '" style="height:' + Math.max(7, p) + '%">' + chip + (now ? '<span class="tip">' + p + '%</span>' : '') + '</div>' +
+            '</div><div class="bday' + (now ? ' now' : '') + '">' + day + '</div></div>';
+    }).join('') : '<div class="empty">No classes yet.</div>';
+    const eligible = Number((d.thresholds || {}).eligible) || 75;
+    $('thresh').style.bottom = (26 + 1.5 * eligible) + 'px';        // 150px track + 26px day label
+    $('threshLabel').textContent = eligible + '% eligible';
+    $('thresh').hidden = !sorted.length;
+    scrollChartToLatest();
+}
+function scrollChartToLatest() {
+    const box = $('bars'), now = box.querySelector('.bar.now');
+    if (!now || box.clientWidth === 0) return;
+    const col = now.closest('.bcol');
+    box.scrollLeft = Math.max(0, col.offsetLeft - box.clientWidth + col.offsetWidth * 2.5);
+}
+
+// ── Attendance calendar ──────────────────────────────────────
+const CAL = { month: '', sel: '' };
+function renderCalendar(classes) {
+    const held = classes.filter(c => !isAhead(c));
+    $('classCount').textContent = held.length ? held.filter(c => c.attended).length + ' of ' + held.length + ' attended' : 'No classes held yet';
+    const months = [...new Set(classes.map(c => c.date.slice(0, 7)))].sort();
+    if (!months.length) {
+        $('monLabel').textContent = TODAY ? MON_LONG[ymdParts(TODAY).m] + ' ' + ymdParts(TODAY).y : '';
+        $('calGrid').innerHTML = '<div class="empty" style="grid-column:1/-1">No classes yet.</div>';
+        $('dayCard').hidden = true; $('monthList').innerHTML = ''; $('monthSummary').textContent = '';
+        $('monPrev').disabled = $('monNext').disabled = true;
+        return;
+    }
+    if (months.indexOf(CAL.month) === -1) {
+        const tm = TODAY.slice(0, 7);
+        CAL.month = months.indexOf(tm) !== -1 ? tm : (months.filter(m => m <= tm).pop() || months[0]);
+        CAL.sel = '';
+    }
+    drawMonth(classes, months);
+}
+function drawMonth(classes, months) {
+    const ym = CAL.month, y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1;
+    const inMonth = classes.filter(c => c.date.slice(0, 7) === ym).sort((a, b) => a.date < b.date ? -1 : 1);
+    const byDate = {}; inMonth.forEach(c => { byDate[c.date] = c; });
+    if (!byDate[CAL.sel]) {
+        const past = inMonth.filter(c => c.date <= TODAY);
+        CAL.sel = (byDate[TODAY] ? TODAY : past.length ? past[past.length - 1].date : inMonth[0].date);
+    }
+    $('monLabel').textContent = MON_LONG[m] + ' ' + y;
+    const mi = months.indexOf(ym);
+    $('monPrev').disabled = mi <= 0;
+    $('monNext').disabled = mi >= months.length - 1;
+
+    const firstWd = new Date(Date.UTC(y, m, 1)).getUTCDay();
+    const days = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    let html = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(x => '<div class="cal-dow">' + x + '</div>').join('');
+    for (let i = 0; i < firstWd; i++) html += '<div class="day out"></div>';
+    for (let dd = 1; dd <= days; dd++) {
+        const ymd = ym + '-' + pad2(dd), c = byDate[ymd];
+        if (!c) { html += '<div class="day' + (ymd === TODAY ? ' today' : '') + '">' + dd + '</div>'; continue; }
+        const st = classStatus(c);
+        const dot = ymd === TODAY ? '<span class="dot' + (c.attended ? ' done' : '') + '"></span>' : '';
+        html += '<button type="button" class="day class ' + st + (ymd === TODAY ? ' today' : '') + (ymd === CAL.sel ? ' sel' : '') + '" data-date="' + ymd + '" aria-label="' +
+            esc(shortDate(ymd) + ', ' + (c.topic || 'class') + ', ' + STATUS_TEXT[st](c)) + '">' + dd + dot + '</button>';
+    }
+    const cells = firstWd + days;
+    for (let i = cells; i % 7 !== 0; i++) html += '<div class="day out"></div>';
+    $('calGrid').innerHTML = html;
+
+    showDay(byDate[CAL.sel]);
+    $('monthList').innerHTML = inMonth.map(c => {
+        const p = ymdParts(c.date), st = classStatus(c);
+        return '<button type="button" class="mrow' + (c.date === CAL.sel ? ' sel' : '') + '" data-date="' + c.date + '">' +
+            '<span class="mdate"><b>' + p.d + '</b><small>' + DAY[p.wd] + '</small></span>' +
+            '<span class="mt">' + esc(c.topic || (c.eventType === 'SAT' ? 'Saturday class' : 'Sunday class')) + '</span>' +
+            '<span class="sdot s-' + st + '" title="' + esc(STATUS_TEXT[st](c)) + '"></span></button>';
+    }).join('');
+    const mHeld = inMonth.filter(c => !isAhead(c));
+    $('monthSummary').textContent = mHeld.length ? MON_LONG[m] + ': ' + mHeld.filter(c => c.attended).length + ' of ' + mHeld.length + (mHeld.length === 1 ? ' class' : ' classes') + ' attended'
+        : MON_LONG[m] + ': no classes held yet';
+}
+const STATUS_TEXT = {
+    att: () => 'Attended',
+    half: c => c.date === TODAY && c.checkedIn ? 'Checked in' : c.checkedIn ? 'Checked in only' : 'Checked out only',
+    miss: () => 'Missed',
+    soon: () => 'Upcoming',
+    today: c => c.attended ? 'Attended' : 'Today'
+};
+const STATUS_CHIP = { att: 'green', half: 'yellow', miss: 'red', soon: 'grey', today: 'black' };
+function showDay(c) {
+    $('dayCard').hidden = !c;
+    if (!c) return;
+    const st = c.date === TODAY && c.attended ? (c.state === 'PARTIAL' ? 'half' : 'att') : classStatus(c);
+    $('dayTopic').textContent = c.topic || (c.eventType === 'SAT' ? 'Saturday class' : 'Sunday class');
+    $('dayChip').className = 'chip ' + STATUS_CHIP[st];
+    $('dayChip').textContent = STATUS_TEXT[st](c);
+    $('dayDate').textContent = longDate(c.date) + (c.start ? ' · ' + c.start + (c.end ? ' – ' + c.end : '') : '');
+    const meta = [];
+    if (isAhead(c)) meta.push('<span>Not held yet</span>');
+    else meta.push('<span>Points earned: <b>' + (Number(c.points) || 0) + '</b></span>');
+    if (c.eventType === 'SAT' && !isAhead(c)) meta.push('<span>Check-in ' + (c.checkedIn ? '✓' : '✗') + ' · Check-out ' + (c.checkedOut ? '✓' : '✗') + '</span>');
+    else meta.push('<span>' + (c.eventType === 'SAT' ? 'Saturday class' : 'Sunday class') + '</span>');
+    $('dayMeta').innerHTML = meta.join('');
+}
+function selectDay(ymd) {
+    if (!DATA) return;
+    CAL.sel = ymd;
+    const classes = DATA.classes || [];
+    drawMonth(classes, [...new Set(classes.map(c => c.date.slice(0, 7)))].sort());
+}
+$('calGrid').addEventListener('click', e => { const b = e.target.closest('.day.class'); if (b) selectDay(b.dataset.date); });
+$('monthList').addEventListener('click', e => { const b = e.target.closest('.mrow'); if (b) selectDay(b.dataset.date); });
+function moveMonth(step) {
+    if (!DATA) return;
+    const classes = DATA.classes || [];
+    const months = [...new Set(classes.map(c => c.date.slice(0, 7)))].sort();
+    const i = months.indexOf(CAL.month) + step;
+    if (i < 0 || i >= months.length) return;
+    CAL.month = months[i]; CAL.sel = '';
+    drawMonth(classes, months);
+}
+$('monPrev').addEventListener('click', () => moveMonth(-1));
+$('monNext').addEventListener('click', () => moveMonth(1));
+
+// ── Start: a saved session skips the login (same tab as before), then refreshes quietly ──
+(function start() {
+    const s = readSession();
+    if (s) { renderAll(s.data, s.savedAt); setTab(s.tab || 'home'); refresh(true); }
+    else showLogin('');
+})();
+</script>
+</body>
+</html>
